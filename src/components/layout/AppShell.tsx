@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useSession } from '@/app/session';
+import { LOGIN_PATH } from '@/services/apiClient';
 import { useModHotkey } from '@/hooks/useHotkey';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -7,6 +9,7 @@ import { CommandPalette } from './CommandPalette';
 
 export function AppShell() {
   const location = useLocation();
+  const { isAuthenticated } = useSession();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
 
@@ -26,6 +29,11 @@ export function AppShell() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [navOpen]);
+
+  if (!isAuthenticated) {
+    const next = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`${LOGIN_PATH}?next=${next}`} replace />;
+  }
 
   return (
     <div className="min-h-screen bg-canvas">

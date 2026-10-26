@@ -1,5 +1,4 @@
 import type {
-  ClimateReading,
   CropId,
   DashboardSummary,
   HarvestForecast,
@@ -152,35 +151,13 @@ export const plotsDb: Plot[] = [
 
 /* ─────────────────────────── Clima ─────────────────────────── */
 
-export function buildTodayReadings(): ClimateReading[] {
-  const base = [
-    { t: 24.6, soil: 52, air: 64, rain: 0 },
-    { t: 25.8, soil: 51, air: 58, rain: 0 },
-    { t: 28.9, soil: 50, air: 49, rain: 0 },
-    { t: 31.7, soil: 48, air: 41, rain: 0 },
-    { t: 33.4, soil: 46, air: 36, rain: 0 },
-    { t: 34.1, soil: 45, air: 33, rain: 0.4 },
-    { t: 32.2, soil: 46, air: 38, rain: 1.2 },
-    { t: 31.0, soil: 46, air: 40, rain: 0 },
-  ];
-  // Última leitura há 1 min; anteriores a cada 2 h
-  return base.map((b, i) => ({
-    id: `rd_${i}`,
-    stationId: 'ESP-PTR-01',
-    timestamp: minutesAgo(1 + (base.length - 1 - i) * 120),
-    temperature: b.t,
-    soilMoisture: b.soil,
-    airHumidity: b.air,
-    rainfall: b.rain,
-  }));
-}
-
 export function buildSummary(): DashboardSummary {
   return {
     projectedProductionT: 1248,
     productionChangePct: 8.2,
     avgTemperatureC: 31,
     temperatureDeltaC: 2,
+    airHumidityPct: 41,
     soilMoisturePct: 46,
     rainfall7dMm: 12,
     lastReadingAt: minutesAgo(1),
@@ -204,6 +181,8 @@ export function buildForecast(cropId: CropId): HarvestForecast {
       period,
       productionT: PRODUCTION[cropId][i] ?? 0,
       avgTemperatureC: TEMPS[i] ?? 0,
+      // Estação instalada há ~2 meses: só os meses recentes têm média medida
+      measuredTemperatureC: i <= currentMonth && i >= currentMonth - 1 ? Math.round(((TEMPS[i] ?? 0) + 0.9 - i * 0.05) * 10) / 10 : null,
       projected: i > currentMonth,
     })),
   };

@@ -1,4 +1,4 @@
-import { ChevronDown, UserRound } from 'lucide-react';
+import { ChevronDown, LogOut, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Role, User } from '@/types';
 import { ROLE_LABEL, ROLES } from '@/lib/rbac';
@@ -8,9 +8,10 @@ import { Avatar, Menu, Skeleton, type MenuItem } from '@/components/ui';
 interface UserMenuProps {
   user: User | undefined;
   onSimulateRole: (role: Role) => void;
+  onSignOut: () => void;
 }
 
-export function UserMenu({ user, onSimulateRole }: UserMenuProps) {
+export function UserMenu({ user, onSimulateRole, onSignOut }: UserMenuProps) {
   const navigate = useNavigate();
 
   if (!user) {
@@ -37,6 +38,7 @@ export function UserMenu({ user, onSimulateRole }: UserMenuProps) {
           onSelect: () => onSimulateRole(r),
         }))
       : []),
+    { key: 'logout', section: 'Sessão', label: 'Sair', icon: <LogOut className="h-4 w-4" />, tone: 'danger', onSelect: onSignOut },
   ];
 
   return (

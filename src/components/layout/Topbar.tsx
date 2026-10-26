@@ -12,7 +12,7 @@ interface TopbarProps {
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
 export function Topbar({ onOpenSearch, onOpenNav }: TopbarProps) {
-  const { user, simulateRole } = useSession();
+  const { user, simulateRole, signOut } = useSession();
   const { data: alert } = useActiveAlert();
 
   return (
@@ -26,7 +26,7 @@ export function Topbar({ onOpenSearch, onOpenNav }: TopbarProps) {
         onClick={onOpenSearch}
         aria-label="Abrir busca global"
         aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'}
-        className="flex h-11 w-full max-w-md items-center gap-3 rounded-tile border border-border bg-canvas/60 px-3.5 text-left text-sm text-ink-subtle transition-colors duration-150 hover:border-border-strong"
+        className="flex h-11 min-w-0 max-w-md flex-1 items-center gap-3 rounded-tile border border-border bg-canvas/60 px-3.5 text-left text-sm text-ink-subtle transition-colors duration-150 hover:border-border-strong"
       >
         <Search aria-hidden className="h-4 w-4" />
         <span className="flex-1 truncate">Buscar talhões, estações, relatórios…</span>
@@ -41,7 +41,7 @@ export function Topbar({ onOpenSearch, onOpenNav }: TopbarProps) {
           {alert && <span aria-hidden className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-accent-vivid ring-2 ring-surface" />}
         </Button>
         <span aria-hidden className="hidden h-8 w-px bg-border sm:block" />
-        <UserMenu user={user} onSimulateRole={simulateRole} />
+        <UserMenu user={user} onSimulateRole={simulateRole} onSignOut={() => void signOut()} />
       </div>
     </header>
   );

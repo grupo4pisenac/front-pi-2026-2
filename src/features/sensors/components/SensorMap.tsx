@@ -3,7 +3,7 @@ import { RadioTower } from 'lucide-react';
 import type { Station } from '@/types';
 import { palette } from '@/theme/tokens';
 import { cn } from '@/lib/cn';
-import { formatCelsius, formatPercent, formatRelative } from '@/lib/formatters';
+import { formatCelsius, formatOr, formatPercent, formatRelative } from '@/lib/formatters';
 import { STATUS_META, statusLabel } from '../stationStatus';
 
 interface SensorMapProps {
@@ -121,7 +121,7 @@ function Pin({ station, selected, onSelect, now }: PinProps) {
             </div>
             <div>
               <dt className="text-[10px] uppercase tracking-wider text-ink-subtle">Solo</dt>
-              <dd className="text-xs font-semibold tabular-nums text-ink">{formatPercent(station.lastReading.soilMoisture)}</dd>
+              <dd className="text-xs font-semibold tabular-nums text-ink">{formatOr(station.lastReading.soilMoisture, formatPercent)}</dd>
             </div>
             <div>
               <dt className="text-[10px] uppercase tracking-wider text-ink-subtle">Ar</dt>

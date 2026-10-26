@@ -1,31 +1,21 @@
 import { useState } from 'react';
-import type { ClimateReading, CropId } from '@/types';
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+import type { CropId } from '@/types';
 import { useSession } from '@/app/session';
 import { useNow } from '@/hooks/useNow';
 import { greetingFor } from '@/lib/greeting';
-import { firstName, formatTime } from '@/lib/formatters';
-import { downloadFile, toCsv } from '@/lib/csv';
+import { firstName } from '@/lib/formatters';
+import { exportReadings } from './exportReadings';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Skeleton } from '@/components/ui';
-import { useActivePlots, useDashboardSummary, useHarvestForecast, useTodayReadings } from './queries';
+import { useActivePlots, useClimateSeries, useDashboardSummary, useHarvestForecast, useTodayReadings } from './queries';
+import { ClimateChartCard } from './components/ClimateChartCard';
 import { LiveIndicator } from './components/LiveIndicator';
 import { DashboardKpis } from './components/DashboardKpis';
 import { HarvestForecastCard } from './components/HarvestForecastCard';
 import { ActivePlotsCard } from './components/ActivePlotsCard';
 import { ClimateHistoryCard } from './components/ClimateHistoryCard';
-
-function exportReadings(readings: ClimateReading[]) {
-  const csv = toCsv(readings, [
-    { header: 'Data/hora', value: (r) => new Date(r.timestamp).toLocaleString('pt-BR') },
-    { header: 'Horário', value: (r) => formatTime(r.timestamp) },
-    { header: 'Estação', value: (r) => r.stationId },
-    { header: 'Temperatura (°C)', value: (r) => r.temperature.toLocaleString('pt-BR') },
-    { header: 'Umidade do ar (%)', value: (r) => r.airHumidity },
-    { header: 'Umidade do solo (%)', value: (r) => r.soilMoisture },
-    { header: 'Chuva (mm)', value: (r) => r.rainfall.toLocaleString('pt-BR') },
-  ]);
-  downloadFile(csv, `barto-historico-climatico-${new Date().toISOString().slice(0, 10)}.csv`);
-}
 
 export function DashboardPage() {
   const now = useNow();
@@ -36,6 +26,8 @@ export function DashboardPage() {
   const forecast = useHarvestForecast(cropId);
   const plots = useActivePlots();
   const readings = useTodayReadings();
+  // O painel mostra sempre as últimas 24 h; períodos maiores ficam na página Clima
+  const series = useClimateSeries('24h');
 
   return (
     <>
@@ -46,7 +38,33 @@ export function DashboardPage() {
       />
 
       <div className="space-y-6">
-        <DashboardKpis data={summary.data} isLoading={summary.isLoading} isError={summary.isError} onRetry={() => summary.refetch()} />
+        <DashboardKpis
+          data={summary.data}
+          isLoading={summary.isLoading}
+          isError={summary.isError}
+          onRetry={() => summary.refetch()}
+          trend={series.data}
+        />
+
+        <ClimateChartCard
+          range="24h"
+          now={now}
+          title="Clima nas últimas 24 horas"
+          readings={series.data}
+          isLoading={series.isLoading}
+          isRefreshing={series.isPlaceholderData}
+          isError={series.isError}
+          onRetry={() => series.refetch()}
+          action={
+            <Link
+              to="/clima"
+              className="inline-flex h-9 items-center gap-1.5 rounded-tile border border-border bg-surface px-3.5 text-[13px] font-semibold text-ink transition-colors duration-150 hover:bg-canvas"
+            >
+              Ver análise completa
+              <ArrowRight aria-hidden className="h-3.5 w-3.5" />
+            </Link>
+          }
+        />
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           <div className="xl:col-span-2">

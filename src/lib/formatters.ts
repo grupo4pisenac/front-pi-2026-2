@@ -24,6 +24,13 @@ const rtf = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto', style: 'narro
 export const formatInteger = (n: number): string => integerFmt.format(n);
 export const formatDecimal = (n: number): string => decimalFmt.format(n);
 
+/** Valor ausente (sensor não mede ou ainda sem leitura) */
+export const EMPTY_VALUE = '—';
+
+/** Aplica o formatador ou devolve "—" quando o valor é null/undefined */
+export const formatOr = (n: number | null | undefined, format: (n: number) => string): string =>
+  n === null || n === undefined ? EMPTY_VALUE : format(n);
+
 /** 46 → "46%" (pt-BR cola o símbolo de % sem espaço, como nas telas) */
 export const formatPercent = (n: number, fractionDigits = 0): string =>
   `${new Intl.NumberFormat(LOCALE, { maximumFractionDigits: fractionDigits, minimumFractionDigits: fractionDigits }).format(n)}%`;
@@ -77,3 +84,8 @@ export function initials(name: string): string {
 }
 
 export const firstName = (name: string): string => name.trim().split(/\s+/)[0] ?? name;
+
+const kpaFmt = new Intl.NumberFormat(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** 1.234 → "1,23 kPa" */
+export const formatKpa = (n: number): string => `${kpaFmt.format(n)}${THIN}kPa`;

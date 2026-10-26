@@ -12,7 +12,8 @@ export interface MapPosition {
 
 export interface StationReading {
   temperature: number;
-  soilMoisture: number;
+  /** null quando a estação não mede umidade do solo */
+  soilMoisture: number | null;
   airHumidity: number;
 }
 

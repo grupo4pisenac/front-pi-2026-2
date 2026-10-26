@@ -5,8 +5,10 @@ export interface HarvestForecastPoint {
   period: string;
   /** toneladas */
   productionT: number;
-  /** °C */
+  /** °C — normal climatológica do mês (referência) */
   avgTemperatureC: number;
+  /** °C — média medida pela estação no mês; null sem leituras ou em mês projetado */
+  measuredTemperatureC: number | null;
   /** true para pontos projetados (futuro) */
   projected: boolean;
 }

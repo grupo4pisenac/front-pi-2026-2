@@ -1,9 +1,10 @@
-import { useId } from 'react';
+import { useId, useMemo } from 'react';
 import {
   Area,
   CartesianGrid,
   ComposedChart,
   Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -13,91 +14,155 @@ import {
 import type { HarvestForecastPoint } from '@/types';
 import { chartColors } from '@/theme/tokens';
 import { formatCelsius, formatInteger, formatTons } from '@/lib/formatters';
+import { TooltipRow, TooltipShell } from '@/components/charts/ChartParts';
+import { activeDot, crosshair, gridProps, tickStyle } from '@/components/charts/chartTheme';
 
 interface HarvestChartProps {
   points: HarvestForecastPoint[];
 }
 
-function ChartTooltip({ active, payload, label }: TooltipProps<number, string>) {
-  if (!active || !payload?.length) return null;
-  const point = payload[0]?.payload as HarvestForecastPoint | undefined;
-  if (!point) return null;
+interface Point extends HarvestForecastPoint {
+  /** Produção dos meses já ocorridos (inclui o mês atual) */
+  realized: number | null;
+  /** Produção projetada (começa no mês atual para a linha não ter lacuna) */
+  forecast: number | null;
+}
+
+function Readout({ active, payload }: TooltipProps<number, string>) {
+  const p = payload?.[0]?.payload as Point | undefined;
+  if (!active || !p) return null;
   return (
-    <div className="rounded-tile border border-border bg-surface px-3.5 py-2.5 shadow-pop">
-      <p className="text-xs font-semibold text-ink">
-        {label} {point.projected && <span className="font-medium text-ink-subtle">· projetado</span>}
-      </p>
-      <dl className="mt-1.5 space-y-1 text-xs">
-        <div className="flex items-center gap-2">
-          <span aria-hidden className="h-0.5 w-3 rounded-full bg-brand" />
-          <dt className="text-ink-muted">Produção</dt>
-          <dd className="ml-auto pl-4 font-semibold tabular-nums text-ink">{formatTons(point.productionT)}</dd>
-        </div>
-        <div className="flex items-center gap-2">
-          <span aria-hidden className="h-0.5 w-3 rounded-full bg-accent-vivid" />
-          <dt className="text-ink-muted">Temperatura</dt>
-          <dd className="ml-auto pl-4 font-semibold tabular-nums text-ink">{formatCelsius(point.avgTemperatureC, 1)}</dd>
-        </div>
-      </dl>
+    <TooltipShell title={`${p.period}${p.projected ? ' · projetado' : ''}`}>
+      <TooltipRow color={chartColors.production} shape={p.projected ? 'dashed' : 'line'} label="Produção" value={formatTons(p.productionT)} />
+      {p.measuredTemperatureC !== null && (
+        <TooltipRow color={chartColors.temperature} shape="dot" label="Temp. medida" value={formatCelsius(p.measuredTemperatureC, 1)} />
+      )}
+      <TooltipRow color={chartColors.reference} label="Normal climatológica" value={formatCelsius(p.avgTemperatureC, 1)} />
+    </TooltipShell>
+  );
+}
+
+function PanelTitle({ children }: { children: string }) {
+  return <p className="mb-1 text-xs font-medium text-ink-muted">{children}</p>;
+}
+
+/**
+ * Pequenos múltiplos com o mesmo eixo de meses: produção (t) em cima, temperatura (°C) embaixo.
+ * Realizado em linha sólida, projetado tracejado; a temperatura medida pela estação é destacada
+ * sobre a normal climatológica em cinza.
+ */
+export function HarvestChart({ points }: HarvestChartProps) {
+  const syncId = useId();
+  const gradientId = useId().replace(/:/g, '');
+  const data = useMemo<Point[]>(() => {
+    const current = points.findIndex((p) => p.projected) - 1;
+    const lastRealized = current < 0 ? points.length - 1 : current;
+    return points.map((p, i) => ({
+      ...p,
+      realized: i <= lastRealized ? p.productionT : null,
+      forecast: i >= lastRealized ? p.productionT : null,
+    }));
+  }, [points]);
+  const currentPeriod = data.find((d) => d.realized !== null && d.forecast !== null)?.period;
+  const temps = data.flatMap((d) => [d.avgTemperatureC, d.measuredTemperatureC ?? d.avgTemperatureC]);
+  const tempDomain: [number, number] = [Math.floor(Math.min(...temps) - 1), Math.ceil(Math.max(...temps) + 1)];
+
+  return (
+    <div className="flex h-full flex-col">
+      <PanelTitle>Produção (t)</PanelTitle>
+      <div className="min-h-0 flex-[1.5]">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data} syncId={syncId} margin={{ top: 6, right: 12, bottom: 0, left: 0 }}>
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={chartColors.production} stopOpacity={0.14} />
+                <stop offset="100%" stopColor={chartColors.production} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid {...gridProps} />
+            <XAxis dataKey="period" axisLine={false} tickLine={false} tick={false} height={4} />
+            {/* Área = magnitude: a base é sempre zero */}
+            <YAxis axisLine={false} tickLine={false} tick={tickStyle} width={52} domain={[0, 'auto']} tickFormatter={(v: number) => `${formatInteger(v)} t`} />
+            {currentPeriod && (
+              <ReferenceLine
+                x={currentPeriod}
+                stroke={chartColors.axis}
+                strokeOpacity={0.5}
+                label={{ value: 'Hoje', position: 'insideTopRight', fill: chartColors.axis, fontSize: 11, fontWeight: 600 }}
+              />
+            )}
+            <Tooltip content={<Readout />} cursor={crosshair} isAnimationActive={false} />
+            <Area
+              type="monotone"
+              dataKey="realized"
+              stroke={chartColors.production}
+              strokeWidth={2}
+              fill={`url(#${gradientId})`}
+              dot={{ r: 3.5, fill: chartColors.production, stroke: chartColors.surface, strokeWidth: 2 }}
+              activeDot={activeDot(chartColors.production)}
+              connectNulls={false}
+              animationDuration={500}
+            />
+            <Line
+              type="monotone"
+              dataKey="forecast"
+              stroke={chartColors.production}
+              strokeWidth={2}
+              strokeDasharray="6 5"
+              dot={{ r: 3.5, fill: chartColors.surface, stroke: chartColors.production, strokeWidth: 2, strokeDasharray: '0' }}
+              activeDot={{ ...activeDot(chartColors.production), strokeDasharray: '0' }}
+              connectNulls={false}
+              animationDuration={500}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+      <PanelTitle>Temperatura média do mês (°C)</PanelTitle>
+      <div className="min-h-0 flex-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data} syncId={syncId} margin={{ top: 6, right: 12, bottom: 0, left: 0 }}>
+            <CartesianGrid {...gridProps} />
+            <XAxis dataKey="period" axisLine={false} tickLine={false} tick={tickStyle} height={28} dy={6} />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={tickStyle}
+              width={52}
+              domain={tempDomain}
+              allowDecimals={false}
+              tickFormatter={(v: number) => `${formatInteger(v)}°`}
+            />
+            <Tooltip content={() => null} cursor={crosshair} isAnimationActive={false} />
+            <Line
+              type="monotone"
+              dataKey="avgTemperatureC"
+              stroke={chartColors.reference}
+              strokeWidth={2}
+              dot={false}
+              activeDot={activeDot(chartColors.reference)}
+              animationDuration={500}
+            />
+            <Line
+              type="monotone"
+              dataKey="measuredTemperatureC"
+              stroke={chartColors.temperature}
+              strokeWidth={2}
+              dot={{ r: 4, fill: chartColors.temperature, stroke: chartColors.surface, strokeWidth: 2 }}
+              activeDot={activeDot(chartColors.temperature)}
+              connectNulls={false}
+              animationDuration={500}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
 
-/**
- * Produção (área + linha sólida, eixo esquerdo visível) e temperatura (linha tracejada,
- * eixo direito oculto — escala implícita). Valores reais da temperatura ficam no tooltip
- * e no resumo textual, então nenhuma leitura depende do eixo oculto.
- */
-export function HarvestChart({ points }: HarvestChartProps) {
-  const gradientId = useId().replace(/:/g, '');
-  const tickStyle = { fill: chartColors.axis, fontSize: 12, fontFamily: 'inherit' };
+export const HARVEST_LEGEND = [
+  { label: 'Produção realizada', color: chartColors.production, shape: 'line' as const },
+  { label: 'Produção projetada', color: chartColors.production, shape: 'dashed' as const },
+  { label: 'Temperatura medida', color: chartColors.temperature, shape: 'dot' as const },
+  { label: 'Normal climatológica', color: chartColors.reference, shape: 'line' as const },
+];
 
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <ComposedChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={chartColors.production} stopOpacity={0.18} />
-            <stop offset="100%" stopColor={chartColors.production} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid vertical={false} stroke={chartColors.grid} strokeDasharray="4 4" />
-        <XAxis dataKey="period" axisLine={false} tickLine={false} tick={tickStyle} dy={8} />
-        <YAxis
-          yAxisId="prod"
-          axisLine={false}
-          tickLine={false}
-          tick={tickStyle}
-          width={48}
-          tickFormatter={(v: number) => `${formatInteger(v)} t`}
-        />
-        <YAxis yAxisId="temp" orientation="right" hide domain={['dataMin - 4', 'dataMax + 2']} />
-        <Tooltip content={<ChartTooltip />} cursor={{ stroke: chartColors.grid, strokeWidth: 1 }} />
-        <Area
-          yAxisId="prod"
-          type="monotone"
-          dataKey="productionT"
-          name="Produção projetada"
-          stroke={chartColors.production}
-          strokeWidth={2}
-          fill={`url(#${gradientId})`}
-          dot={{ r: 4, fill: chartColors.surface, stroke: chartColors.production, strokeWidth: 2 }}
-          activeDot={{ r: 5, fill: chartColors.production, stroke: chartColors.surface, strokeWidth: 2 }}
-          animationDuration={600}
-        />
-        <Line
-          yAxisId="temp"
-          type="monotone"
-          dataKey="avgTemperatureC"
-          name="Temperatura média"
-          stroke={chartColors.temperature}
-          strokeWidth={2}
-          strokeDasharray="6 5"
-          dot={false}
-          activeDot={{ r: 4, fill: chartColors.temperature, stroke: chartColors.surface, strokeWidth: 2 }}
-          animationDuration={600}
-        />
-      </ComposedChart>
-    </ResponsiveContainer>
-  );
-}

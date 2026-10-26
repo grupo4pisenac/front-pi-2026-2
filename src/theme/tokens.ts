@@ -65,9 +65,22 @@ export const avatarPalette = [
 export const chartColors = {
   production: palette.brand.DEFAULT,
   temperature: palette.accent.vivid,
+  humidity: palette.crop.guava,
+  vpd: palette.brand.DEFAULT,
+  /** Série de referência (normal climatológica, meta) — recua para o cinza */
+  reference: palette.neutral.DEFAULT,
+  /** Linhas de limiar (atenção / crítico) */
+  threshold: palette.accent.DEFAULT,
+  critical: palette.danger.DEFAULT,
   grid: palette.border,
   axis: palette.ink.subtle,
   surface: palette.surface,
 } as const;
+
+/**
+ * Rampa sequencial (um só matiz, claro → escuro) do mapa de calor de temperatura.
+ * Validada com o validate_palette.js do skill de dataviz (--ordinal, superfície #FDFCF9).
+ */
+export const heatRamp = ['#E9A273', '#DA7B3E', '#B85B22', '#8E4317', '#642D0D'] as const;
 
 export const fontFamily = ['Manrope', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'];
