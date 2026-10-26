@@ -47,8 +47,9 @@ const mock: UsersService = {
     if (usersDb.some((u) => u.email.toLowerCase() === input.email.toLowerCase())) {
       return Promise.reject(new ApiError(409, 'Já existe um usuário com este e-mail'));
     }
+    const { password: _password, ...data } = input;
     const user: User = {
-      ...input,
+      ...data,
       id: `usr_${Date.now()}`,
       lastAccessAt: null,
       createdAt: new Date().toISOString(),
@@ -58,7 +59,8 @@ const mock: UsersService = {
   },
   update: (id, input) => {
     const i = findIndex(id);
-    const updated: User = { ...usersDb[i]!, ...input };
+    const { password: _password, ...data } = input;
+    const updated: User = { ...usersDb[i]!, ...data };
     usersDb[i] = updated;
     return mockDelay(updated);
   },
