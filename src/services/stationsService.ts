@@ -1,18 +1,28 @@
 import type { NetworkHealth, Station, StationInput } from '@/types';
-import { USE_MOCKS, mockDelay, request } from './apiClient';
+import { ApiError, USE_MOCKS, mockDelay, request } from './apiClient';
 import { stationsDb } from './mocks/data';
 
 export interface StationsService {
   list(): Promise<Station[]>;
   getHealth(): Promise<NetworkHealth>;
   create(input: StationInput): Promise<Station>;
+  update(id: string, input: StationInput): Promise<Station>;
+  remove(id: string): Promise<void>;
 }
 
 const http: StationsService = {
   list: () => request('/stations'),
   getHealth: () => request('/stations/health'),
   create: (input) => request('/stations', { method: 'POST', body: input }),
+  update: (id, input) => request(`/stations/${encodeURIComponent(id)}`, { method: 'PUT', body: input }),
+  remove: (id) => request(`/stations/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };
+
+function findStationIndex(id: string): number {
+  const i = stationsDb.findIndex((s) => s.id === id);
+  if (i < 0) throw new ApiError(404, 'Estação não encontrada');
+  return i;
+}
 
 function computeHealth(stations: Station[]): NetworkHealth {
   const active = stations.filter((s) => s.status === 'ATIVO').length;
@@ -47,6 +57,16 @@ const mock: StationsService = {
     };
     stationsDb.push(station);
     return mockDelay(station);
+  },
+  update: (id, input) => {
+    const i = findStationIndex(id);
+    const updated: Station = { ...stationsDb[i]!, ...input, id };
+    stationsDb[i] = updated;
+    return mockDelay(updated);
+  },
+  remove: (id) => {
+    stationsDb.splice(findStationIndex(id), 1);
+    return mockDelay(undefined);
   },
 };
 
