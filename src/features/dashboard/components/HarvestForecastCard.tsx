@@ -3,7 +3,8 @@ import type { CropId, HarvestForecast } from '@/types';
 import { CROPS, CROP_IDS } from '@/lib/crops';
 import { formatCelsius, formatTons } from '@/lib/formatters';
 import { Card, CardBody, CardHeader, ErrorState, Select, Skeleton } from '@/components/ui';
-import { HarvestChart } from './HarvestChart';
+import { ChartLegend } from '@/components/charts/ChartParts';
+import { HARVEST_LEGEND, HarvestChart } from './HarvestChart';
 
 interface HarvestForecastCardProps {
   cropId: CropId;
@@ -13,6 +14,14 @@ interface HarvestForecastCardProps {
   isError: boolean;
   isFetching: boolean;
   onRetry: () => void;
+}
+
+function measuredSummary(pts: HarvestForecast['points']): string {
+  const measured = pts.filter((p) => p.measuredTemperatureC !== null);
+  if (!measured.length) return ' A estação ainda não tem um mês completo de medições.';
+  return ' Medido pela estação: ' + measured
+    .map((p) => `${p.period} ${formatCelsius(p.measuredTemperatureC!, 1)} (normal ${formatCelsius(p.avgTemperatureC, 1)})`)
+    .join('; ') + '.';
 }
 
 function summarize(f: HarvestForecast): string {
@@ -25,22 +34,8 @@ function summarize(f: HarvestForecast): string {
   return (
     `${CROPS[f.cropId].label}: produção vai de ${formatTons(first.productionT)} em ${first.period} ` +
     `a ${formatTons(last.productionT)} em ${last.period}, com pico de ${formatTons(peak.productionT)} em ${peak.period}. ` +
-    `Temperatura média máxima de ${formatCelsius(hottest.avgTemperatureC, 1)} em ${hottest.period}.`
-  );
-}
-
-function Legend() {
-  return (
-    <ul className="flex items-center gap-5 text-xs font-medium text-ink-muted" aria-hidden>
-      <li className="flex items-center gap-2">
-        <span className="h-0.5 w-4 rounded-full bg-brand" />
-        Produção projetada
-      </li>
-      <li className="flex items-center gap-2">
-        <span className="w-4 border-t-2 border-dashed border-accent-vivid" />
-        Temperatura média
-      </li>
-    </ul>
+    `Normal climatológica mais quente: ${formatCelsius(hottest.avgTemperatureC, 1)} em ${hottest.period}.` +
+    measuredSummary(pts)
   );
 }
 
@@ -53,7 +48,7 @@ export function HarvestForecastCard({ cropId, onCropChange, data, isLoading, isE
       <CardHeader
         titleId={titleId}
         title="Previsão de safra"
-        subtitle="Produção projetada × temperatura média, por mês"
+        subtitle="Produção por mês e a temperatura que a acompanha — normal do Vale × medida pela estação"
         action={
           <>
             <label htmlFor={selectId} className="sr-only">
@@ -75,10 +70,8 @@ export function HarvestForecastCard({ cropId, onCropChange, data, isLoading, isE
         }
       />
       <CardBody className="flex flex-1 flex-col">
-        <div className="mb-4 flex justify-end">
-          <Legend />
-        </div>
-        <div className="relative h-72 flex-1">
+        <ChartLegend items={HARVEST_LEGEND} className="mb-4" />
+        <div className="relative h-[22rem]">
           {isError ? (
             <ErrorState message="Não foi possível carregar a previsão." onRetry={onRetry} />
           ) : isLoading || !data ? (
@@ -88,7 +81,7 @@ export function HarvestForecastCard({ cropId, onCropChange, data, isLoading, isE
             </div>
           ) : (
             <figure className={isFetching ? 'h-full opacity-60 transition-opacity duration-150' : 'h-full transition-opacity duration-150'}>
-              <div role="img" aria-label={`Gráfico de linhas. ${summarize(data)}`} className="h-full">
+              <div role="img" aria-label={`Gráfico de linhas em dois painéis. ${summarize(data)}`} className="h-full">
                 <HarvestChart points={data.points} />
               </div>
               <figcaption className="sr-only">{summarize(data)}</figcaption>
