@@ -19,6 +19,8 @@ export interface UserInput {
   email: string;
   role: Role;
   status: UserStatus;
+  /** Obrigatória no cadastro (mín. 8 caracteres); na edição, só quando for trocar */
+  password?: string;
 }
 
 export interface UsersStats {
