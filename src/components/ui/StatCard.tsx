@@ -14,16 +14,18 @@ interface StatCardProps {
   helper?: ReactNode;
   helperClass?: string;
   layout?: 'stacked' | 'inline';
+  /** Minigráfico de tendência abaixo do valor (só no layout empilhado) */
+  trend?: ReactNode;
 }
 
-export function StatCard({ label, value, icon, tone = 'brand', helper, helperClass = 'text-ink-subtle', layout = 'stacked' }: StatCardProps) {
+export function StatCard({ label, value, icon, tone = 'brand', helper, helperClass = 'text-ink-subtle', layout = 'stacked', trend }: StatCardProps) {
   if (layout === 'inline') {
     return (
       <Card className="flex items-center gap-4 p-6 transition-shadow duration-200 ease-out hover:shadow-pop">
         <IconTile icon={icon} tone={tone} />
         <div className="min-w-0">
           <p className="text-[13px] font-medium text-ink-muted">{label}</p>
-          <p className="mt-0.5 text-kpi tabular-nums text-ink">{value}</p>
+          <p className="mt-0.5 text-kpi text-ink">{value}</p>
           {helper && <p className={cn('mt-0.5 text-xs font-medium', helperClass)}>{helper}</p>}
         </div>
       </Card>
@@ -35,8 +37,9 @@ export function StatCard({ label, value, icon, tone = 'brand', helper, helperCla
         <p className="pt-1 text-[13px] font-medium text-ink-muted">{label}</p>
         <IconTile icon={icon} tone={tone} />
       </div>
-      <p className="mt-3 text-kpi tabular-nums text-ink">{value}</p>
+      <p className="mt-3 text-kpi text-ink">{value}</p>
       {helper && <p className={cn('mt-1.5 flex items-center gap-1 text-xs font-medium', helperClass)}>{helper}</p>}
+      {trend && <div className="-mx-1 mt-3">{trend}</div>}
     </Card>
   );
 }
