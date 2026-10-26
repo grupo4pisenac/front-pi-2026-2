@@ -13,13 +13,17 @@ interface UserFormModalProps {
   error: string | null;
 }
 
-const EMPTY: UserInput = { name: '', email: '', role: 'PRODUTOR_EXPORTADOR', status: 'ATIVO' };
+const EMPTY: UserInput = { name: '', email: '', role: 'PRODUTOR_EXPORTADOR', status: 'ATIVO', password: '' };
 type Errors = Partial<Record<keyof UserInput, string>>;
 
-function validate(v: UserInput): Errors {
+const MIN_PASSWORD = 8;
+
+function validate(v: UserInput, isNew: boolean): Errors {
   const e: Errors = {};
   if (v.name.trim().split(/\s+/).length < 2) e.name = 'Informe nome e sobrenome.';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email.trim())) e.email = 'Informe um e-mail válido.';
+  const pwd = v.password ?? '';
+  if ((isNew || pwd) && pwd.length < MIN_PASSWORD) e.password = `A senha precisa de pelo menos ${MIN_PASSWORD} caracteres.`;
   return e;
 }
 
@@ -29,7 +33,7 @@ export function UserFormModal({ open, user, onClose, onSubmit, isSubmitting, err
 
   useEffect(() => {
     if (open) {
-      setValues(user ? { name: user.name, email: user.email, role: user.role, status: user.status } : EMPTY);
+      setValues(user ? { name: user.name, email: user.email, role: user.role, status: user.status, password: '' } : EMPTY);
       setErrors({});
     }
   }, [open, user]);
@@ -38,9 +42,12 @@ export function UserFormModal({ open, user, onClose, onSubmit, isSubmitting, err
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const errs = validate(values);
+    const errs = validate(values, !user);
     setErrors(errs);
-    if (Object.keys(errs).length === 0) onSubmit({ ...values, name: values.name.trim(), email: values.email.trim().toLowerCase() });
+    if (Object.keys(errs).length > 0) return;
+    const { password, ...rest } = values;
+    // Senha vazia na edição = mantém a atual (não envia o campo)
+    onSubmit({ ...rest, name: values.name.trim(), email: values.email.trim().toLowerCase(), ...(password ? { password } : {}) });
   };
 
   return (
@@ -48,7 +55,7 @@ export function UserFormModal({ open, user, onClose, onSubmit, isSubmitting, err
       open={open}
       onClose={onClose}
       title={user ? 'Editar usuário' : 'Novo usuário'}
-      description={user ? 'Atualize o perfil de acesso e o status.' : 'O convite de acesso é enviado por e-mail após o cadastro.'}
+      description={user ? 'Atualize o perfil de acesso e o status.' : 'Defina a senha inicial e compartilhe com o usuário.'}
       footer={
         <>
           <Button variant="secondary" size="sm" onClick={onClose}>
@@ -66,6 +73,23 @@ export function UserFormModal({ open, user, onClose, onSubmit, isSubmitting, err
         </Field>
         <Field label="E-mail corporativo" error={errors.email}>
           {(id, d) => <Input id={id} type="email" aria-describedby={d} aria-invalid={!!errors.email} value={values.email} onChange={(e) => set('email', e.target.value)} autoComplete="email" />}
+        </Field>
+        <Field
+          label={user ? 'Nova senha' : 'Senha inicial'}
+          error={errors.password}
+          hint={user ? 'Deixe em branco para manter a senha atual.' : `Mínimo de ${MIN_PASSWORD} caracteres.`}
+        >
+          {(id, d) => (
+            <Input
+              id={id}
+              type="password"
+              aria-describedby={d}
+              aria-invalid={!!errors.password}
+              value={values.password ?? ''}
+              onChange={(e) => set('password', e.target.value)}
+              autoComplete="new-password"
+            />
+          )}
         </Field>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Perfil de acesso">
