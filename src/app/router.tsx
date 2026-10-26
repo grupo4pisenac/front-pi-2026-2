@@ -7,12 +7,15 @@ import { NAV_ITEMS } from '@/components/layout/navigation';
 import { RequirePermission } from '@/components/auth/RequirePermission';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import { LoginPage } from '@/pages/LoginPage';
 import { Skeleton } from '@/components/ui';
 
 // Code-splitting por rota: Recharts só é baixado quando o Painel abre
 const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const SensorsPage = lazy(() => import('@/features/sensors/SensorsPage').then((m) => ({ default: m.SensorsPage })));
 const UsersPage = lazy(() => import('@/features/users/UsersPage').then((m) => ({ default: m.UsersPage })));
+const IrrigationPage = lazy(() => import('@/features/irrigation/IrrigationPage').then((m) => ({ default: m.IrrigationPage })));
+const ClimatePage = lazy(() => import('@/features/climate/ClimatePage').then((m) => ({ default: m.ClimatePage })));
 
 const guard = (permission: Permission, element: ReactNode) => (
   <RequirePermission permission={permission}>
@@ -22,8 +25,6 @@ const guard = (permission: Permission, element: ReactNode) => (
 
 const PLACEHOLDER_COPY: Record<string, { eyebrow: string; description: string }> = {
   '/previsao': { eyebrow: 'Safra', description: 'Projeções detalhadas por talhão, com cenários climáticos e janelas ideais de colheita para exportação.' },
-  '/clima': { eyebrow: 'Monitoramento', description: 'Séries históricas, alertas meteorológicos e comparativos entre estações do Vale.' },
-  '/irrigacao': { eyebrow: 'Manejo', description: 'Recomendações de lâmina e turnos de rega com base na evapotranspiração e na umidade do solo.' },
   '/relatorios': { eyebrow: 'Exportação', description: 'Relatórios prontos para certificadoras e importadores, em PDF e planilha.' },
   '/analises': { eyebrow: 'Inteligência', description: 'Cruzamentos entre clima, fenologia e produtividade para apoiar decisões de safra.' },
 };
@@ -37,6 +38,7 @@ const placeholderRoutes = NAV_ITEMS.filter((i) => i.to in PLACEHOLDER_COPY).map(
 });
 
 export const router = createBrowserRouter([
+  { path: '/login', element: <LoginPage /> },
   {
     path: '/',
     element: <AppShell />,
@@ -44,6 +46,8 @@ export const router = createBrowserRouter([
       { index: true, element: guard('dashboard:read', <DashboardPage />) },
       { path: 'mapeamento', element: guard('sensors:read', <SensorsPage />) },
       { path: 'usuarios', element: guard('users:read', <UsersPage />) },
+      { path: 'clima', element: guard('climate:read', <ClimatePage />) },
+      { path: 'irrigacao', element: guard('irrigation:read', <IrrigationPage />) },
       ...placeholderRoutes,
       {
         path: 'perfil',
