@@ -1,10 +1,11 @@
-import { ArrowDownRight, ArrowUpRight, CloudRain, Droplets, Sprout, Thermometer } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, CloudRain, Droplets, Gauge, Sprout, Thermometer } from 'lucide-react';
 import type { ClimateReading, DashboardSummary } from '@/types';
-import { BAND_TEXT_CLASS, productionChangeBand, soilMoistureBand, temperatureDeltaBand } from '@/lib/agronomy';
-import { formatCelsius, formatInteger, formatMm, formatOr, formatPercent, formatSignedPercent, THIN } from '@/lib/formatters';
+import { BAND_TEXT_CLASS, productionChangeBand, soilMoistureBand, temperatureDeltaBand, vpdLevel } from '@/lib/agronomy';
+import { formatCelsius, formatInteger, formatKpa, formatMm, formatOr, formatPercent, formatSignedPercent, THIN } from '@/lib/formatters';
 import { chartColors } from '@/theme/tokens';
 import { Card, ErrorState, StatCard, StatCardSkeleton } from '@/components/ui';
 import { Sparkline } from '@/components/charts/Sparkline';
+import { toVpdSeries } from '@/features/irrigation/vpd';
 
 interface DashboardKpisProps {
   data: DashboardSummary | undefined;
@@ -20,8 +21,10 @@ const GRID = 'grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4';
 const SOIL_COPY = { ideal: 'Dentro do ideal', atencao: 'Fora da faixa ideal', critico: 'Nível crítico', neutro: '' } as const;
 
 function trendLabel(name: string, values: number[], format: (n: number) => string): string {
-  return `Tendência de ${name} nas últimas 24 h: de ${format(values[0]!)} a ${format(values[values.length - 1]!)}, ` +
-    `mínima ${format(Math.min(...values))} e máxima ${format(Math.max(...values))}.`;
+  return (
+    `Tendência de ${name} nas últimas 24 h: de ${format(values[0]!)} a ${format(values[values.length - 1]!)}, ` +
+    `mínima ${format(Math.min(...values))} e máxima ${format(Math.max(...values))}.`
+  );
 }
 
 export function DashboardKpis({ data, isLoading, isError, onRetry, trend }: DashboardKpisProps) {
@@ -49,9 +52,13 @@ export function DashboardKpis({ data, isLoading, isError, onRetry, trend }: Dash
   const TrendIcon = data.productionChangePct >= 0 ? ArrowUpRight : ArrowDownRight;
   const delta = Math.abs(data.temperatureDeltaC ?? 0);
   // Estação sem sensor de solo (só DHT: temperatura + umidade do ar) → card mostra a umidade do ar
-  const showAirHumidity = data.soilMoisturePct === null && data.airHumidityPct !== null;
+  const showAirHumidity = data.soilMoisturePct === null;
   const temps = trend?.map((r) => r.temperature) ?? [];
   const hums = trend?.map((r) => r.airHumidity) ?? [];
+  const vpdPoints = trend?.length ? toVpdSeries(trend) : [];
+  const vpds = vpdPoints.map((p) => p.vpd);
+  const latestVpd = vpdPoints[vpdPoints.length - 1];
+  const vpdMeta = latestVpd ? vpdLevel(latestVpd.vpd) : null;
   const fmtTemp = (n: number) => formatCelsius(n, 1);
 
   return (
@@ -59,7 +66,12 @@ export function DashboardKpis({ data, isLoading, isError, onRetry, trend }: Dash
       <StatCard
         label="Produção projetada"
         icon={Sprout}
-        value={<>{formatInteger(data.projectedProductionT)}<span className="text-lg font-medium text-ink-muted">{THIN}t</span></>}
+        value={
+          <>
+            {formatInteger(data.projectedProductionT)}
+            <span className="text-lg font-medium text-ink-muted">{THIN}t</span>
+          </>
+        }
         helperClass={BAND_TEXT_CLASS[prodBand]}
         helper={
           <>
@@ -68,28 +80,34 @@ export function DashboardKpis({ data, isLoading, isError, onRetry, trend }: Dash
           </>
         }
       />
+
       <StatCard
-        label="Temperatura média"
+        label="Temperatura média (24 h)"
         icon={Thermometer}
         tone="accent"
-        value={formatOr(data.avgTemperatureC, formatCelsius)}
+        value={formatOr(data.avgTemperatureC, (n) => formatCelsius(n, 1))}
         helperClass={BAND_TEXT_CLASS[tempBand]}
         helper={
           data.avgTemperatureC === null
             ? 'Sem leituras nas últimas 24 h'
-            : data.temperatureDeltaC === null || delta < 0.5
-              ? 'Média das últimas 24 h'
-              : `${formatCelsius(delta)} ${data.temperatureDeltaC > 0 ? 'acima' : 'abaixo'} da média de 30 dias`
+            : data.temperatureDeltaC === null || delta < 0.3
+              ? 'Estável vs. média de 30 dias'
+              : `${formatCelsius(delta, 1)} ${data.temperatureDeltaC > 0 ? 'acima' : 'abaixo'} da média de 30d`
         }
         trend={temps.length > 1 && <Sparkline values={temps} color={chartColors.temperature} label={trendLabel('temperatura', temps, fmtTemp)} />}
       />
+
       {showAirHumidity ? (
         <StatCard
-          label="Umidade do ar"
+          label="Umidade do ar (24 h)"
           icon={Droplets}
           value={formatOr(data.airHumidityPct, formatPercent)}
-          helper="Média das últimas 24 h"
-          trend={hums.length > 1 && <Sparkline values={hums} color={chartColors.humidity} label={trendLabel('umidade do ar', hums, (n) => formatPercent(n))} />}
+          helper="Média das últimas 24 horas"
+          trend={
+            hums.length > 1 && (
+              <Sparkline values={hums} color={chartColors.humidity} label={trendLabel('umidade do ar', hums, (n) => formatPercent(n))} />
+            )
+          }
         />
       ) : (
         <StatCard
@@ -100,13 +118,29 @@ export function DashboardKpis({ data, isLoading, isError, onRetry, trend }: Dash
           helper={data.soilMoisturePct === null ? 'Sem leituras nas últimas 24 h' : SOIL_COPY[soilBand]}
         />
       )}
-      <StatCard
-        label="Chuva acumulada"
-        icon={CloudRain}
-        tone="neutral"
-        value={formatOr(data.rainfall7dMm, formatMm)}
-        helper={data.rainfall7dMm === null ? 'Sem pluviômetro na estação' : 'Últimos 7 dias'}
-      />
+
+      {data.rainfall7dMm !== null ? (
+        <StatCard
+          label="Chuva acumulada"
+          icon={CloudRain}
+          tone="neutral"
+          value={formatMm(data.rainfall7dMm)}
+          helper="Últimos 7 dias"
+        />
+      ) : (
+        <StatCard
+          label="Demanda evaporativa (VPD)"
+          icon={Gauge}
+          value={latestVpd ? formatKpa(latestVpd.vpd) : '—'}
+          helperClass={vpdMeta ? BAND_TEXT_CLASS[vpdMeta.band] : undefined}
+          helper={vpdMeta ? `${vpdMeta.label} · cálculo em tempo real` : 'Calculado de temp. e umidade'}
+          trend={
+            vpds.length > 1 && (
+              <Sparkline values={vpds} color={chartColors.vpd} label={trendLabel('VPD', vpds, (n) => formatKpa(n))} />
+            )
+          }
+        />
+      )}
     </div>
   );
 }

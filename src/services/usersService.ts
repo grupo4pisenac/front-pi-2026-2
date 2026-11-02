@@ -1,5 +1,5 @@
 import type { User, UserInput, UsersStats } from '@/types';
-import { ApiError, USE_MOCKS, mockDelay, request } from './apiClient';
+import { ApiError, mockDelay, request, tokenStorage, withFallback } from './apiClient';
 import { currentUserId, usersDb } from './mocks/data';
 
 export interface UsersService {
@@ -17,7 +17,7 @@ const http: UsersService = {
   stats: () => request('/users/stats'),
   create: (input) => request('/users', { method: 'POST', body: input }),
   update: (id, input) => request(`/users/${id}`, { method: 'PUT', body: input }),
-  remove: (id) => request(`/users/${id}`, { method: 'DELETE' }),
+  remove: (id, ) => request(`/users/${id}`, { method: 'DELETE' }),
 };
 
 function computeStats(users: User[]): UsersStats {
@@ -39,8 +39,18 @@ function findIndex(id: string): number {
   return i;
 }
 
-const mock: UsersService = {
-  me: () => mockDelay(usersDb.find((u) => u.id === currentUserId) ?? usersDb[0]!, 150),
+function resolveCurrentFallbackUser(): User {
+  const token = tokenStorage.access;
+  if (token?.startsWith('local_access_')) {
+    const id = token.replace('local_access_', '');
+    const found = usersDb.find((u) => u.id === id);
+    if (found) return found;
+  }
+  return usersDb.find((u) => u.id === currentUserId) ?? usersDb[0]!;
+}
+
+const fallback: UsersService = {
+  me: () => mockDelay(resolveCurrentFallbackUser(), 100),
   list: () => mockDelay(usersDb),
   stats: () => mockDelay(computeStats(usersDb)),
   create: (input) => {
@@ -70,4 +80,11 @@ const mock: UsersService = {
   },
 };
 
-export const usersService: UsersService = USE_MOCKS ? mock : http;
+export const usersService: UsersService = {
+  me: () => withFallback(() => http.me(), () => fallback.me()),
+  list: () => withFallback(() => http.list(), () => fallback.list()),
+  stats: () => withFallback(() => http.stats(), () => fallback.stats()),
+  create: (input) => withFallback(() => http.create(input), () => fallback.create(input)),
+  update: (id, input) => withFallback(() => http.update(id, input), () => fallback.update(id, input)),
+  remove: (id) => withFallback(() => http.remove(id), () => fallback.remove(id)),
+};

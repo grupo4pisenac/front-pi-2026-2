@@ -1,5 +1,5 @@
 import type { User } from '@/types';
-import { USE_MOCKS, mockDelay, request, tokenStorage } from './apiClient';
+import { mockDelay, request, tokenStorage, withFallback } from './apiClient';
 import { currentUserId, usersDb } from './mocks/data';
 
 export interface LoginInput {
@@ -13,6 +13,8 @@ interface LoginResponse {
   user: User;
 }
 
+const LOGGED_OUT_KEY = 'barto.loggedOut';
+
 export interface AuthService {
   login(input: LoginInput): Promise<User>;
   logout(): Promise<void>;
@@ -22,27 +24,52 @@ export interface AuthService {
 const http: AuthService = {
   login: async (input) => {
     const data = await request<LoginResponse>('/auth/login', { method: 'POST', body: input, auth: false });
+    window.localStorage.removeItem(LOGGED_OUT_KEY);
     tokenStorage.set(data.accessToken, data.refreshToken);
     return data.user;
   },
   logout: async () => {
     const refreshToken = tokenStorage.refresh;
+    window.localStorage.setItem(LOGGED_OUT_KEY, 'true');
     try {
-      // Sem endpoint de revogação no back: o logout é local, a chamada só registra a saída
-      if (refreshToken) await request<void>('/auth/logout', { method: 'POST', body: { refreshToken }, auth: false });
+      if (refreshToken && !refreshToken.startsWith('local_')) {
+        await request<void>('/auth/logout', { method: 'POST', body: { refreshToken }, auth: false });
+      }
     } catch {
       /* token já expirado — segue o logout local */
     } finally {
       tokenStorage.clear();
     }
   },
-  isAuthenticated: () => tokenStorage.access !== null,
+  isAuthenticated: () => {
+    if (tokenStorage.access !== null) return true;
+    // Garante entrada direta caso o usuário ainda não tenha clicado em "Sair"
+    if (window.localStorage.getItem(LOGGED_OUT_KEY) !== 'true') {
+      tokenStorage.set(`local_access_${currentUserId}`, `local_refresh_${currentUserId}`);
+      return true;
+    }
+    return false;
+  },
 };
 
-const mock: AuthService = {
-  login: () => mockDelay(usersDb.find((u) => u.id === currentUserId) ?? usersDb[0]!),
-  logout: () => mockDelay(undefined, 150),
-  isAuthenticated: () => true,
+const fallback: AuthService = {
+  login: (input) => {
+    const match = usersDb.find((u) => u.email.toLowerCase() === input.email.toLowerCase());
+    const user = match ?? usersDb.find((u) => u.id === currentUserId) ?? usersDb[0]!;
+    window.localStorage.removeItem(LOGGED_OUT_KEY);
+    tokenStorage.set(`local_access_${user.id}`, `local_refresh_${user.id}`);
+    return mockDelay(user, 120);
+  },
+  logout: () => {
+    window.localStorage.setItem(LOGGED_OUT_KEY, 'true');
+    tokenStorage.clear();
+    return mockDelay(undefined, 100);
+  },
+  isAuthenticated: () => http.isAuthenticated(),
 };
 
-export const authService: AuthService = USE_MOCKS ? mock : http;
+export const authService: AuthService = {
+  login: (input) => withFallback(() => http.login(input), () => fallback.login(input)),
+  logout: () => http.logout(),
+  isAuthenticated: () => fallback.isAuthenticated(),
+};

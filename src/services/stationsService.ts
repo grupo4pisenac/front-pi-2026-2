@@ -1,5 +1,5 @@
 import type { NetworkHealth, Station, StationInput } from '@/types';
-import { ApiError, USE_MOCKS, mockDelay, request } from './apiClient';
+import { ApiError, mockDelay, request, withFallback } from './apiClient';
 import { stationsDb } from './mocks/data';
 
 export interface StationsService {
@@ -33,21 +33,23 @@ function computeHealth(stations: Station[]): NetworkHealth {
     active,
     attention,
     inactive: stations.length - active - attention,
-    lastSyncAt: new Date(Date.now() - 60_000).toISOString(),
+    lastSyncAt: new Date(Date.now() - 45_000).toISOString(),
   };
 }
 
-const mock: StationsService = {
+const fallback: StationsService = {
   list: () => mockDelay(stationsDb),
   getHealth: () => mockDelay(computeHealth(stationsDb)),
   create: (input) => {
-    // Posiciona o novo pin dentro da área do município escolhido
+    if (stationsDb.some((s) => s.id === input.id)) {
+      return Promise.reject(new ApiError(409, 'Já existe uma estação com este ID'));
+    }
     const isPetrolina = input.municipality === 'PETROLINA';
     const station: Station = {
       ...input,
       position: {
-        x: (isPetrolina ? 18 : 68) + Math.random() * 16,
-        y: (isPetrolina ? 48 : 28) + Math.random() * 20,
+        x: Math.round(((isPetrolina ? 18 : 68) + Math.random() * 16) * 10) / 10,
+        y: Math.round(((isPetrolina ? 48 : 28) + Math.random() * 20) * 10) / 10,
       },
       status: 'INATIVO',
       statusReason: 'Aguardando 1ª leitura',
@@ -60,7 +62,16 @@ const mock: StationsService = {
   },
   update: (id, input) => {
     const i = findStationIndex(id);
-    const updated: Station = { ...stationsDb[i]!, ...input, id };
+    const prev = stationsDb[i]!;
+    const isPetrolina = input.municipality === 'PETROLINA';
+    const position =
+      prev.municipality === input.municipality
+        ? prev.position
+        : {
+            x: Math.round(((isPetrolina ? 18 : 68) + Math.random() * 16) * 10) / 10,
+            y: Math.round(((isPetrolina ? 48 : 28) + Math.random() * 20) * 10) / 10,
+          };
+    const updated: Station = { ...prev, ...input, id, position };
     stationsDb[i] = updated;
     return mockDelay(updated);
   },
@@ -70,4 +81,10 @@ const mock: StationsService = {
   },
 };
 
-export const stationsService: StationsService = USE_MOCKS ? mock : http;
+export const stationsService: StationsService = {
+  list: () => withFallback(() => http.list(), () => fallback.list()),
+  getHealth: () => withFallback(() => http.getHealth(), () => fallback.getHealth()),
+  create: (input) => withFallback(() => http.create(input), () => fallback.create(input)),
+  update: (id, input) => withFallback(() => http.update(id, input), () => fallback.update(id, input)),
+  remove: (id) => withFallback(() => http.remove(id), () => fallback.remove(id)),
+};

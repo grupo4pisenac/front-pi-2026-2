@@ -1,41 +1,26 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
-import { UserRound } from 'lucide-react';
 import type { Permission } from '@/types';
 import { AppShell } from '@/components/layout/AppShell';
-import { NAV_ITEMS } from '@/components/layout/navigation';
 import { RequirePermission } from '@/components/auth/RequirePermission';
-import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { Skeleton } from '@/components/ui';
 
-// Code-splitting por rota: Recharts só é baixado quando o Painel abre
+// Code-splitting por rota
 const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const ClimatePage = lazy(() => import('@/features/climate/ClimatePage').then((m) => ({ default: m.ClimatePage })));
+const IrrigationPage = lazy(() => import('@/features/irrigation/IrrigationPage').then((m) => ({ default: m.IrrigationPage })));
+const ForecastPage = lazy(() => import('@/features/forecast/ForecastPage').then((m) => ({ default: m.ForecastPage })));
 const SensorsPage = lazy(() => import('@/features/sensors/SensorsPage').then((m) => ({ default: m.SensorsPage })));
 const UsersPage = lazy(() => import('@/features/users/UsersPage').then((m) => ({ default: m.UsersPage })));
-const IrrigationPage = lazy(() => import('@/features/irrigation/IrrigationPage').then((m) => ({ default: m.IrrigationPage })));
-const ClimatePage = lazy(() => import('@/features/climate/ClimatePage').then((m) => ({ default: m.ClimatePage })));
+const ProfilePage = lazy(() => import('@/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
 
 const guard = (permission: Permission, element: ReactNode) => (
   <RequirePermission permission={permission}>
     <Suspense fallback={<Skeleton className="h-10 w-72" />}>{element}</Suspense>
   </RequirePermission>
 );
-
-const PLACEHOLDER_COPY: Record<string, { eyebrow: string; description: string }> = {
-  '/previsao': { eyebrow: 'Safra', description: 'Projeções detalhadas por talhão, com cenários climáticos e janelas ideais de colheita para exportação.' },
-  '/relatorios': { eyebrow: 'Exportação', description: 'Relatórios prontos para certificadoras e importadores, em PDF e planilha.' },
-  '/analises': { eyebrow: 'Inteligência', description: 'Cruzamentos entre clima, fenologia e produtividade para apoiar decisões de safra.' },
-};
-
-const placeholderRoutes = NAV_ITEMS.filter((i) => i.to in PLACEHOLDER_COPY).map((i) => {
-  const copy = PLACEHOLDER_COPY[i.to]!;
-  return {
-    path: i.to.slice(1),
-    element: guard(i.permission, <PlaceholderPage eyebrow={copy.eyebrow} title={i.label} description={copy.description} icon={i.icon} />),
-  };
-});
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -44,14 +29,18 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       { index: true, element: guard('dashboard:read', <DashboardPage />) },
-      { path: 'mapeamento', element: guard('sensors:read', <SensorsPage />) },
-      { path: 'usuarios', element: guard('users:read', <UsersPage />) },
       { path: 'clima', element: guard('climate:read', <ClimatePage />) },
       { path: 'irrigacao', element: guard('irrigation:read', <IrrigationPage />) },
-      ...placeholderRoutes,
+      { path: 'previsao', element: guard('forecast:read', <ForecastPage />) },
+      { path: 'mapeamento', element: guard('sensors:read', <SensorsPage />) },
+      { path: 'usuarios', element: guard('users:read', <UsersPage />) },
       {
         path: 'perfil',
-        element: <PlaceholderPage eyebrow="Conta" title="Meu perfil" icon={UserRound} description="Preferências de notificação, idioma e segurança da conta." />,
+        element: (
+          <Suspense fallback={<Skeleton className="h-10 w-72" />}>
+            <ProfilePage />
+          </Suspense>
+        ),
       },
       { path: '*', element: <NotFoundPage /> },
     ],

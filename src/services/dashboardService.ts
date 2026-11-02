@@ -9,8 +9,8 @@ import type {
   Plot,
   ThermalAlert,
 } from '@/types';
-import { USE_MOCKS, mockDelay, request } from './apiClient';
-import { activeAlert, buildForecast, buildSummary, plotsDb } from './mocks/data';
+import { mockDelay, request, withFallback } from './apiClient';
+import { buildActiveAlert, buildForecast, buildSummary, plotsDb } from './mocks/data';
 import { mockAggregates, mockReadings } from './mocks/climateSeries';
 
 export interface DashboardService {
@@ -35,14 +35,22 @@ const http: DashboardService = {
   getActiveAlert: () => request('/alerts/active'),
 };
 
-const mock: DashboardService = {
+const fallback: DashboardService = {
   getSummary: () => mockDelay(buildSummary()),
   getHarvestForecast: (cropId) => mockDelay(buildForecast(cropId)),
   getActivePlots: () => mockDelay(plotsDb),
   getTodayReadings: () => mockDelay(mockReadings('today')),
   getReadings: (range, maxPoints) => mockDelay(mockReadings(range, maxPoints)),
   getAggregates: (bucket, days) => mockDelay(mockAggregates(bucket, days)),
-  getActiveAlert: () => mockDelay(activeAlert, 200),
+  getActiveAlert: () => mockDelay(buildActiveAlert(), 120),
 };
 
-export const dashboardService: DashboardService = USE_MOCKS ? mock : http;
+export const dashboardService: DashboardService = {
+  getSummary: () => withFallback(() => http.getSummary(), () => fallback.getSummary()),
+  getHarvestForecast: (cropId) => withFallback(() => http.getHarvestForecast(cropId), () => fallback.getHarvestForecast(cropId)),
+  getActivePlots: () => withFallback(() => http.getActivePlots(), () => fallback.getActivePlots()),
+  getTodayReadings: () => withFallback(() => http.getTodayReadings(), () => fallback.getTodayReadings()),
+  getReadings: (range, maxPoints) => withFallback(() => http.getReadings(range, maxPoints), () => fallback.getReadings(range, maxPoints)),
+  getAggregates: (bucket, days) => withFallback(() => http.getAggregates(bucket, days), () => fallback.getAggregates(bucket, days)),
+  getActiveAlert: () => withFallback(() => http.getActiveAlert(), () => fallback.getActiveAlert()),
+};

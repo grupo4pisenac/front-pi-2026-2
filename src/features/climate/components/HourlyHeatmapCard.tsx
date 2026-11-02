@@ -141,7 +141,7 @@ export function HourlyHeatmapCard({ days, data, isLoading, isRefreshing, isError
                       <span
                         key={h}
                         className="h-7 rounded-[4px] transition-[filter] duration-100 hover:brightness-110"
-                        style={{ background: colorFor(c.temp, bins), outline: hover?.cell === c ? '2px solid #1F2A22' : undefined }}
+                        style={{ background: colorFor(c.temp, bins), outline: hover?.cell === c ? '2px solid rgb(var(--color-ink))' : undefined }}
                         onMouseEnter={(e) => {
                           const box = frameRef.current?.getBoundingClientRect();
                           const r = e.currentTarget.getBoundingClientRect();

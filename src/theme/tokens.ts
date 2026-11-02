@@ -1,75 +1,121 @@
 /**
- * Fonte única de verdade dos design tokens.
- * Consumido pelo tailwind.config.ts (classes utilitárias) e pelos gráficos/SVG
- * (que precisam do valor bruto). Nenhum componente declara cor literal.
+ * Fonte única de verdade dos design tokens com suporte nativo a Light Mode e Dark Mode
+ * via variáveis CSS definidas em src/index.css.
  */
-export const palette = {
-  canvas: '#F6F4EE',
-  surface: '#FDFCF9',
-  border: '#E8E4DA',
-  'border-strong': '#D9D3C5',
+const hexVar = (name: string) => `var(${name})`;
+const twColor = (name: string) => `rgb(var(${name}) / <alpha-value>)`;
+
+export const tailwindColors = {
+  canvas: twColor('--color-canvas'),
+  surface: twColor('--color-surface'),
+  border: twColor('--color-border'),
+  'border-strong': twColor('--color-border-strong'),
   ink: {
-    DEFAULT: '#1F2A22',
-    muted: '#5B6359',
-    subtle: '#7E847B', // escurecido de #8E948B para atingir AA (4.5:1) sobre surface
+    DEFAULT: twColor('--color-ink'),
+    muted: twColor('--color-ink-muted'),
+    subtle: twColor('--color-ink-subtle'),
   },
   brand: {
-    DEFAULT: '#2F5A3C',
-    hover: '#264B31',
-    soft: '#E6EEE7',
+    DEFAULT: twColor('--color-brand'),
+    hover: twColor('--color-brand-hover'),
+    soft: twColor('--color-brand-soft'),
   },
   accent: {
-    DEFAULT: '#C9662B', // texto/ícone em laranja (AA); o laranja vivo fica em accent-vivid
-    vivid: '#D9773A',
-    soft: '#FBEADF',
+    DEFAULT: twColor('--color-accent'),
+    vivid: twColor('--color-accent-vivid'),
+    soft: twColor('--color-accent-soft'),
   },
   danger: {
-    DEFAULT: '#C5483B',
-    soft: '#F7E3E0',
+    DEFAULT: twColor('--color-danger'),
+    soft: twColor('--color-danger-soft'),
   },
   neutral: {
-    DEFAULT: '#A3A79E',
-    soft: '#EFEDE6',
+    DEFAULT: twColor('--color-neutral'),
+    soft: twColor('--color-neutral-soft'),
   },
-  // Cores categóricas das culturas — sempre acompanhadas de ícone + nome (codificação secundária)
   crop: {
-    grape: '#3E7A4C',
-    'grape-soft': '#E4EEE6',
-    mango: '#D9773A',
-    'mango-soft': '#FBEADF',
-    arra: '#8A6FD0',
-    'arra-soft': '#ECE8F7',
-    guava: '#1F8199',
-    'guava-soft': '#E0EEF2',
+    grape: twColor('--color-crop-grape'),
+    'grape-soft': twColor('--color-crop-grape-soft'),
+    mango: twColor('--color-crop-mango'),
+    'mango-soft': twColor('--color-crop-mango-soft'),
+    arra: twColor('--color-crop-arra'),
+    'arra-soft': twColor('--color-crop-arra-soft'),
+    guava: twColor('--color-crop-guava'),
+    'guava-soft': twColor('--color-crop-guava-soft'),
   },
   map: {
-    land: '#F1EEE4',
-    grid: '#E6E1D4',
-    river: '#A9CAD6',
-    'river-edge': '#8DB7C6',
-    area: '#C9C2AF',
+    land: twColor('--color-map-land'),
+    grid: twColor('--color-map-grid'),
+    river: twColor('--color-map-river'),
+    'river-edge': twColor('--color-map-river-edge'),
+    area: twColor('--color-map-area'),
   },
 } as const;
 
-/** Fundos determinísticos para avatares (texto sempre em ink). */
+export const palette = {
+  canvas: hexVar('--hex-canvas'),
+  surface: hexVar('--hex-surface'),
+  border: hexVar('--hex-border'),
+  'border-strong': hexVar('--hex-border-strong'),
+  ink: {
+    DEFAULT: hexVar('--hex-ink'),
+    muted: hexVar('--hex-ink-muted'),
+    subtle: hexVar('--hex-ink-subtle'),
+  },
+  brand: {
+    DEFAULT: hexVar('--hex-brand'),
+    hover: hexVar('--hex-brand-hover'),
+    soft: hexVar('--hex-brand-soft'),
+  },
+  accent: {
+    DEFAULT: hexVar('--hex-accent'),
+    vivid: hexVar('--hex-accent-vivid'),
+    soft: hexVar('--hex-accent-soft'),
+  },
+  danger: {
+    DEFAULT: hexVar('--hex-danger'),
+    soft: hexVar('--hex-danger-soft'),
+  },
+  neutral: {
+    DEFAULT: hexVar('--hex-neutral'),
+    soft: hexVar('--hex-neutral-soft'),
+  },
+  crop: {
+    grape: hexVar('--hex-crop-grape'),
+    'grape-soft': hexVar('--hex-crop-grape-soft'),
+    mango: hexVar('--hex-crop-mango'),
+    'mango-soft': hexVar('--hex-crop-mango-soft'),
+    arra: hexVar('--hex-crop-arra'),
+    'arra-soft': hexVar('--hex-crop-arra-soft'),
+    guava: hexVar('--hex-crop-guava'),
+    'guava-soft': hexVar('--hex-crop-guava-soft'),
+  },
+  map: {
+    land: hexVar('--hex-map-land'),
+    grid: hexVar('--hex-map-grid'),
+    river: hexVar('--hex-map-river'),
+    'river-edge': hexVar('--hex-map-river-edge'),
+    area: hexVar('--hex-map-area'),
+  },
+} as const;
+
+/** Fundos determinísticos para avatares adaptáveis ao tema */
 export const avatarPalette = [
-  '#E6EEE7',
-  '#FBEADF',
-  '#ECE8F7',
-  '#E0EEF2',
-  '#F3EBD3',
-  '#EFE3E6',
+  hexVar('--avatar-1'),
+  hexVar('--avatar-2'),
+  hexVar('--avatar-3'),
+  hexVar('--avatar-4'),
+  hexVar('--avatar-5'),
+  hexVar('--avatar-6'),
 ] as const;
 
-/** Valores brutos para Recharts/SVG. */
+/** Valores dinâmicos (hex via CSS vars) para Recharts e SVG */
 export const chartColors = {
   production: palette.brand.DEFAULT,
   temperature: palette.accent.vivid,
   humidity: palette.crop.guava,
   vpd: palette.brand.DEFAULT,
-  /** Série de referência (normal climatológica, meta) — recua para o cinza */
   reference: palette.neutral.DEFAULT,
-  /** Linhas de limiar (atenção / crítico) */
   threshold: palette.accent.DEFAULT,
   critical: palette.danger.DEFAULT,
   grid: palette.border,
@@ -77,10 +123,13 @@ export const chartColors = {
   surface: palette.surface,
 } as const;
 
-/**
- * Rampa sequencial (um só matiz, claro → escuro) do mapa de calor de temperatura.
- * Validada com o validate_palette.js do skill de dataviz (--ordinal, superfície #FDFCF9).
- */
-export const heatRamp = ['#E9A273', '#DA7B3E', '#B85B22', '#8E4317', '#642D0D'] as const;
+/** Rampa sequencial de temperatura (claro → intenso) adaptada ao tema */
+export const heatRamp = [
+  'var(--heat-1)',
+  'var(--heat-2)',
+  'var(--heat-3)',
+  'var(--heat-4)',
+  'var(--heat-5)',
+] as const;
 
 export const fontFamily = ['Manrope', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'];

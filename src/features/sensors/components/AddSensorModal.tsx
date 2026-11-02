@@ -1,17 +1,24 @@
-import { useState, type FormEvent } from 'react';
-import type { CropId, Municipality, StationInput } from '@/types';
+import { useEffect, useState, type FormEvent } from 'react';
+import type { CropId, Municipality, Station, StationInput } from '@/types';
 import { CROPS, CROP_IDS } from '@/lib/crops';
 import { Button, Field, Input, Modal, Select } from '@/components/ui';
 
 interface AddSensorModalProps {
   open: boolean;
+  station?: Station;
   onClose: () => void;
   onSubmit: (input: StationInput) => void;
   isSubmitting: boolean;
   error: string | null;
 }
 
-const EMPTY: StationInput = { id: '', name: '', municipality: 'PETROLINA', productId: 'UVA_SUGRAONE', thingSpeakChannelId: '' };
+const EMPTY: StationInput = {
+  id: '',
+  name: '',
+  municipality: 'PETROLINA',
+  productId: 'UVA_SUGRAONE',
+  thingSpeakChannelId: '',
+};
 
 type Errors = Partial<Record<keyof StationInput, string>>;
 
@@ -23,57 +30,104 @@ function validate(v: StationInput): Errors {
   return e;
 }
 
-export function AddSensorModal({ open, onClose, onSubmit, isSubmitting, error }: AddSensorModalProps) {
+export function AddSensorModal({ open, station, onClose, onSubmit, isSubmitting, error }: AddSensorModalProps) {
   const [values, setValues] = useState<StationInput>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
+  const isEditing = !!station;
+
+  useEffect(() => {
+    if (open) {
+      setValues(
+        station
+          ? {
+              id: station.id,
+              name: station.name,
+              municipality: station.municipality,
+              productId: station.productId,
+              thingSpeakChannelId: station.thingSpeakChannelId,
+            }
+          : EMPTY,
+      );
+      setErrors({});
+    }
+  }, [open, station]);
 
   const set = <K extends keyof StationInput>(k: K, v: StationInput[K]) => setValues((prev) => ({ ...prev, [k]: v }));
-
-  const handleClose = () => {
-    setValues(EMPTY);
-    setErrors({});
-    onClose();
-  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const errs = validate(values);
     setErrors(errs);
-    if (Object.keys(errs).length === 0) onSubmit({ ...values, id: values.id.trim().toUpperCase(), name: values.name.trim() });
+    if (Object.keys(errs).length === 0) {
+      onSubmit({
+        ...values,
+        id: values.id.trim().toUpperCase(),
+        name: values.name.trim(),
+        thingSpeakChannelId: values.thingSpeakChannelId.trim(),
+      });
+    }
   };
 
   return (
     <Modal
       open={open}
-      onClose={handleClose}
-      title="Adicionar sensor"
-      description="Cadastre uma estação ESP32 já publicando em um canal do ThingSpeak."
+      onClose={onClose}
+      title={isEditing ? `Editar estação ${station.id}` : 'Adicionar sensor'}
+      description={
+        isEditing
+          ? 'Atualize a localização, cultura vinculada ou canal ThingSpeak da estação.'
+          : 'Cadastre uma estação ESP32 já publicando em um canal do ThingSpeak.'
+      }
       footer={
         <>
-          <Button variant="secondary" size="sm" onClick={handleClose}>
+          <Button variant="secondary" size="sm" onClick={onClose}>
             Cancelar
           </Button>
-          <Button variant="primary" size="sm" type="submit" form="add-sensor-form" loading={isSubmitting}>
-            Adicionar sensor
+          <Button variant="primary" size="sm" type="submit" form="sensor-form" loading={isSubmitting}>
+            {isEditing ? 'Salvar alterações' : 'Adicionar sensor'}
           </Button>
         </>
       }
     >
-      <form id="add-sensor-form" onSubmit={handleSubmit} noValidate className="space-y-4">
+      <form id="sensor-form" onSubmit={handleSubmit} noValidate className="space-y-4">
         <Field label="Nome da estação" error={errors.name}>
           {(id, d) => (
-            <Input id={id} aria-describedby={d} aria-invalid={!!errors.name} data-autofocus value={values.name} onChange={(e) => set('name', e.target.value)} placeholder="Fazenda Santa Clara" />
+            <Input
+              id={id}
+              aria-describedby={d}
+              aria-invalid={!!errors.name}
+              data-autofocus
+              value={values.name}
+              onChange={(e) => set('name', e.target.value)}
+              placeholder="Fazenda Santa Clara"
+            />
           )}
         </Field>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="ID do dispositivo" error={errors.id}>
             {(id, d) => (
-              <Input id={id} aria-describedby={d} aria-invalid={!!errors.id} value={values.id} onChange={(e) => set('id', e.target.value.toUpperCase())} placeholder="ESP-PTR-04" />
+              <Input
+                id={id}
+                aria-describedby={d}
+                aria-invalid={!!errors.id}
+                disabled={isEditing}
+                value={values.id}
+                onChange={(e) => set('id', e.target.value.toUpperCase())}
+                placeholder="ESP-PTR-04"
+              />
             )}
           </Field>
           <Field label="Canal ThingSpeak" error={errors.thingSpeakChannelId}>
             {(id, d) => (
-              <Input id={id} aria-describedby={d} aria-invalid={!!errors.thingSpeakChannelId} inputMode="numeric" value={values.thingSpeakChannelId} onChange={(e) => set('thingSpeakChannelId', e.target.value)} placeholder="2481040" />
+              <Input
+                id={id}
+                aria-describedby={d}
+                aria-invalid={!!errors.thingSpeakChannelId}
+                inputMode="numeric"
+                value={values.thingSpeakChannelId}
+                onChange={(e) => set('thingSpeakChannelId', e.target.value)}
+                placeholder="2481040"
+              />
             )}
           </Field>
           <Field label="Município">

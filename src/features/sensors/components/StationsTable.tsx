@@ -1,10 +1,22 @@
 import type { ReactNode } from 'react';
-import { Battery, BatteryLow, BatteryMedium, BatteryFull, BatteryWarning, ExternalLink, MapPin, MoreHorizontal, RadioTower } from 'lucide-react';
+import {
+  Battery,
+  BatteryFull,
+  BatteryLow,
+  BatteryMedium,
+  BatteryWarning,
+  ExternalLink,
+  MapPin,
+  MoreHorizontal,
+  Pencil,
+  RadioTower,
+  Trash2,
+} from 'lucide-react';
 import type { Station } from '@/types';
 import { CROPS } from '@/lib/crops';
 import { cn } from '@/lib/cn';
 import { formatPercent, formatRelative } from '@/lib/formatters';
-import { Badge, Button, DataTable, EmptyState, Menu, type Column } from '@/components/ui';
+import { Badge, Button, DataTable, EmptyState, Menu, type Column, type MenuItem } from '@/components/ui';
 import { LOW_BATTERY, STATUS_META, statusLabel } from '../stationStatus';
 
 interface StationsTableProps {
@@ -14,6 +26,9 @@ interface StationsTableProps {
   onRetry: () => void;
   selectedId: string | null;
   onLocate: (id: string) => void;
+  canWrite?: boolean;
+  onEdit?: (station: Station) => void;
+  onDelete?: (station: Station) => void;
   now: number;
   emptyAction?: ReactNode;
 }
@@ -30,7 +45,13 @@ function BatteryCell({ level }: { level: number }) {
   );
 }
 
-function buildColumns(onLocate: (id: string) => void, now: number): Column<Station>[] {
+function buildColumns(
+  onLocate: (id: string) => void,
+  now: number,
+  canWrite?: boolean,
+  onEdit?: (station: Station) => void,
+  onDelete?: (station: Station) => void,
+): Column<Station>[] {
   return [
     {
       key: 'station',
@@ -43,7 +64,9 @@ function buildColumns(onLocate: (id: string) => void, now: number): Column<Stati
           </span>
           <div className="min-w-0">
             <p className="truncate font-semibold text-ink">{s.name}</p>
-            <p className="text-xs text-ink-subtle">{s.id}</p>
+            <p className="text-xs text-ink-subtle">
+              {s.id} · Canal #{s.thingSpeakChannelId}
+            </p>
           </div>
         </div>
       ),
@@ -84,33 +107,71 @@ function buildColumns(onLocate: (id: string) => void, now: number): Column<Stati
       align: 'right',
       mobile: 'actions',
       className: 'w-14',
-      render: (s) => (
-        <Menu
-          items={[
-            { key: 'map', label: 'Ver no mapa', icon: <MapPin className="h-4 w-4" />, onSelect: () => onLocate(s.id) },
-            {
-              key: 'ts',
-              label: 'Abrir canal no ThingSpeak',
-              icon: <ExternalLink className="h-4 w-4" />,
-              onSelect: () => window.open(`https://thingspeak.com/channels/${s.thingSpeakChannelId}`, '_blank', 'noopener'),
-            },
-          ]}
-          trigger={(props) => (
-            <Button {...props} variant="ghost" size="icon" aria-label={`Ações da estação ${s.name}`}>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          )}
-        />
-      ),
+      render: (s) => {
+        const items: MenuItem[] = [
+          { key: 'map', label: 'Ver no mapa', icon: <MapPin className="h-4 w-4" />, onSelect: () => onLocate(s.id) },
+          {
+            key: 'ts',
+            label: 'Abrir canal no ThingSpeak',
+            icon: <ExternalLink className="h-4 w-4" />,
+            onSelect: () => window.open(`https://thingspeak.com/channels/${s.thingSpeakChannelId}`, '_blank', 'noopener'),
+          },
+          ...(canWrite && onEdit
+            ? [
+                {
+                  key: 'edit',
+                  section: 'Gerenciar',
+                  label: 'Editar estação',
+                  icon: <Pencil className="h-4 w-4" />,
+                  onSelect: () => onEdit(s),
+                } satisfies MenuItem,
+              ]
+            : []),
+          ...(canWrite && onDelete
+            ? [
+                {
+                  key: 'delete',
+                  section: 'Gerenciar',
+                  label: 'Remover estação',
+                  icon: <Trash2 className="h-4 w-4" />,
+                  tone: 'danger' as const,
+                  onSelect: () => onDelete(s),
+                } satisfies MenuItem,
+              ]
+            : []),
+        ];
+        return (
+          <Menu
+            items={items}
+            trigger={(props) => (
+              <Button {...props} variant="ghost" size="icon" aria-label={`Ações da estação ${s.name}`}>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            )}
+          />
+        );
+      },
     },
   ];
 }
 
-export function StationsTable({ stations, isLoading, isError, onRetry, selectedId, onLocate, now, emptyAction }: StationsTableProps) {
+export function StationsTable({
+  stations,
+  isLoading,
+  isError,
+  onRetry,
+  selectedId,
+  onLocate,
+  canWrite,
+  onEdit,
+  onDelete,
+  now,
+  emptyAction,
+}: StationsTableProps) {
   return (
     <DataTable
       caption="Estações de monitoramento"
-      columns={buildColumns(onLocate, now)}
+      columns={buildColumns(onLocate, now, canWrite, onEdit, onDelete)}
       rows={stations}
       getRowId={(s) => s.id}
       isLoading={isLoading}

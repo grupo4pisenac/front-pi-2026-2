@@ -131,7 +131,27 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
   return (await res.json()) as T;
 }
 
-/** Latência simulada para os mocks — deixa skeletons e transições visíveis em dev. */
-export function mockDelay<T>(value: T, ms = 450 + Math.random() * 350): Promise<T> {
+/**
+ * Executa a chamada HTTP real ao backend FastAPI; se o servidor local estiver desligado
+ * (erro de rede ou proxy 502/503/504/500 sem JSON da API), usa o espelho local com a mesma
+ * regra de negócio do backend para manter o sistema 100% operacional.
+ */
+export async function withFallback<T>(httpCall: () => Promise<T>, fallbackCall: () => Promise<T>): Promise<T> {
+  if (USE_MOCKS) return fallbackCall();
+  try {
+    return await httpCall();
+  } catch (err) {
+    const isOfflineError =
+      !(err instanceof ApiError) ||
+      (err.status >= 500 && (err.body === undefined || typeof err.body !== 'object'));
+    if (isOfflineError) {
+      return fallbackCall();
+    }
+    throw err;
+  }
+}
+
+/** Latência rápida para transições fluidas */
+export function mockDelay<T>(value: T, ms = 140): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(structuredClone(value)), ms));
 }

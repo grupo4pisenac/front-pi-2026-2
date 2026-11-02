@@ -1,12 +1,13 @@
 import { useId, useMemo, useState } from 'react';
 import { ListFilter, Plus } from 'lucide-react';
-import type { StationInput, StationStatus } from '@/types';
+import type { Station, StationInput, StationStatus } from '@/types';
 import { useNow } from '@/hooks/useNow';
+import { usePermission } from '@/hooks/usePermission';
 import { formatInteger } from '@/lib/formatters';
 import { Can } from '@/components/auth/Can';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Button, Card, CardBody, CardHeader, ErrorState, Menu, Skeleton } from '@/components/ui';
-import { useCreateStation, useNetworkHealth, useStations } from './queries';
+import { Button, Card, CardBody, CardHeader, ErrorState, Menu, Modal, Skeleton } from '@/components/ui';
+import { useDeleteStation, useNetworkHealth, useSaveStation, useStations } from './queries';
 import { STATUS_META } from './stationStatus';
 import { SensorMap } from './components/SensorMap';
 import { NetworkHealthCard } from './components/NetworkHealthCard';
@@ -15,14 +16,19 @@ import { AddSensorModal } from './components/AddSensorModal';
 
 const ALL_STATUSES: StationStatus[] = ['ATIVO', 'ATENCAO', 'INATIVO'];
 
+type FormState = { open: false } | { open: true; station?: Station };
+
 export function SensorsPage() {
   const now = useNow();
+  const canWrite = usePermission('sensors:write');
   const stations = useStations();
   const health = useNetworkHealth();
-  const createStation = useCreateStation();
+  const saveStation = useSaveStation();
+  const deleteStation = useDeleteStation();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<Set<StationStatus>>(new Set(ALL_STATUSES));
-  const [modalOpen, setModalOpen] = useState(false);
+  const [form, setForm] = useState<FormState>({ open: false });
+  const [toDelete, setToDelete] = useState<Station | null>(null);
   const mapTitleId = useId();
   const tableTitleId = useId();
 
@@ -37,32 +43,45 @@ export function SensorsPage() {
       return next;
     });
 
-  const handleCreate = (input: StationInput) =>
-    createStation.mutate(input, {
-      onSuccess: (station) => {
-        setModalOpen(false);
-        setSelectedId(station.id);
+  const handleSave = (input: StationInput) =>
+    saveStation.mutate(
+      { id: form.open ? form.station?.id : undefined, input },
+      {
+        onSuccess: (station) => {
+          setForm({ open: false });
+          setSelectedId(station.id);
+        },
       },
-    });
+    );
 
-  const openModal = () => {
-    createStation.reset();
-    setModalOpen(true);
+  const openModal = (station?: Station) => {
+    saveStation.reset();
+    setForm({ open: true, station });
   };
 
-  const addButton = (
-    <Button variant="primary" leftIcon={<Plus aria-hidden className="h-4 w-4" />} onClick={openModal}>
-      Adicionar sensor
-    </Button>
-  );
+  const handleDelete = () => {
+    if (!toDelete) return;
+    deleteStation.mutate(toDelete.id, {
+      onSettled: () => {
+        if (selectedId === toDelete.id) setSelectedId(null);
+        setToDelete(null);
+      },
+    });
+  };
 
   return (
     <>
       <PageHeader
-        eyebrow="Monitoramento"
-        title="Mapeamento de sensores"
-        subtitle="Estações IoT distribuídas entre Petrolina e Juazeiro, sincronizadas via ThingSpeak."
-        action={<Can permission="sensors:write">{addButton}</Can>}
+        eyebrow="Infraestrutura IoT"
+        title="Estações de monitoramento"
+        subtitle="Estações ESP32 distribuídas entre Petrolina e Juazeiro, sincronizadas via ThingSpeak."
+        action={
+          <Can permission="sensors:write">
+            <Button variant="primary" leftIcon={<Plus aria-hidden className="h-4 w-4" />} onClick={() => openModal()}>
+              Adicionar sensor
+            </Button>
+          </Can>
+        }
       />
 
       <div className="space-y-6">
@@ -87,13 +106,19 @@ export function SensorsPage() {
             </CardBody>
           </Card>
 
-          <NetworkHealthCard data={health.data} isLoading={health.isLoading} isError={health.isError} onRetry={() => health.refetch()} now={now} />
+          <NetworkHealthCard
+            data={health.data}
+            isLoading={health.isLoading}
+            isError={health.isError}
+            onRetry={() => health.refetch()}
+            now={now}
+          />
         </div>
 
         <Card aria-labelledby={tableTitleId} className="overflow-hidden">
           <CardHeader
             titleId={tableTitleId}
-            title="Estações de monitoramento"
+            title="Estações cadastradas"
             subtitle={filtered ? `${formatInteger(filtered.length)} estações exibidas` : 'Carregando…'}
             className="pb-5"
             action={
@@ -109,7 +134,9 @@ export function SensorsPage() {
                   <Button {...props} size="sm" leftIcon={<ListFilter aria-hidden className="h-3.5 w-3.5" />}>
                     Filtrar
                     {activeFilters > 0 && (
-                      <span className="ml-0.5 rounded-full bg-brand px-1.5 text-[11px] font-semibold text-white">{activeFilters}</span>
+                      <span className="ml-0.5 rounded-full bg-brand px-1.5 text-[11px] font-semibold text-white">
+                        {activeFilters}
+                      </span>
                     )}
                   </Button>
                 )}
@@ -123,18 +150,47 @@ export function SensorsPage() {
             onRetry={() => stations.refetch()}
             selectedId={selectedId}
             onLocate={setSelectedId}
+            canWrite={canWrite}
+            onEdit={openModal}
+            onDelete={setToDelete}
             now={now}
           />
         </Card>
       </div>
 
       <AddSensorModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleCreate}
-        isSubmitting={createStation.isPending}
-        error={createStation.error?.message ?? null}
+        open={form.open}
+        station={form.open ? form.station : undefined}
+        onClose={() => setForm({ open: false })}
+        onSubmit={handleSave}
+        isSubmitting={saveStation.isPending}
+        error={saveStation.error?.message ?? null}
       />
+
+      <Modal
+        open={!!toDelete}
+        onClose={() => setToDelete(null)}
+        title="Remover estação"
+        description={
+          toDelete
+            ? `Tem certeza que deseja remover a estação ${toDelete.name} (${toDelete.id})? Esta ação não apaga o histórico já salvo no banco.`
+            : ''
+        }
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setToDelete(null)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" size="sm" onClick={handleDelete} loading={deleteStation.isPending}>
+              Remover estação
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-ink-muted">
+          O dispositivo deixará de aparecer no mapa de monitoramento de {toDelete?.municipality === 'PETROLINA' ? 'Petrolina' : 'Juazeiro'}.
+        </p>
+      </Modal>
     </>
   );
 }

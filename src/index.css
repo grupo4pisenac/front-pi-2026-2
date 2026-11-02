@@ -3,8 +3,181 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light;
+    --color-canvas: 244 247 245;
+    --color-surface: 255 255 255;
+    --color-border: 224 232 227;
+    --color-border-strong: 198 210 202;
+
+    --color-ink: 15 29 21;
+    --color-ink-muted: 72 90 79;
+    --color-ink-subtle: 106 124 113;
+
+    --color-brand: 21 128 61;
+    --color-brand-hover: 22 101 52;
+    --color-brand-soft: 220 252 231;
+
+    --color-accent: 217 119 6;
+    --color-accent-vivid: 234 88 12;
+    --color-accent-soft: 254 243 199;
+
+    --color-danger: 220 38 38;
+    --color-danger-soft: 254 226 226;
+
+    --color-neutral: 142 158 148;
+    --color-neutral-soft: 236 241 238;
+
+    --color-crop-grape: 22 163 74;
+    --color-crop-grape-soft: 220 252 231;
+    --color-crop-mango: 234 88 12;
+    --color-crop-mango-soft: 255 237 213;
+    --color-crop-arra: 124 58 237;
+    --color-crop-arra-soft: 243 232 255;
+    --color-crop-guava: 8 145 178;
+    --color-crop-guava-soft: 207 250 254;
+
+    --color-map-land: 236 243 238;
+    --color-map-grid: 220 230 223;
+    --color-map-river: 125 211 252;
+    --color-map-river-edge: 56 189 248;
+    --color-map-area: 163 184 171;
+
+    /* Hex diretos para atributos SVG e Recharts */
+    --hex-canvas: #F4F7F5;
+    --hex-surface: #FFFFFF;
+    --hex-border: #E0E8E3;
+    --hex-border-strong: #C6D2CA;
+    --hex-ink: #0F1D15;
+    --hex-ink-muted: #485A4F;
+    --hex-ink-subtle: #6A7C71;
+    --hex-brand: #15803D;
+    --hex-brand-hover: #166534;
+    --hex-brand-soft: #DCFCE7;
+    --hex-accent: #D97706;
+    --hex-accent-vivid: #EA580C;
+    --hex-accent-soft: #FEF3C7;
+    --hex-danger: #DC2626;
+    --hex-danger-soft: #FEE2E2;
+    --hex-neutral: #8E9E94;
+    --hex-neutral-soft: #ECF1EE;
+    --hex-crop-grape: #16A34A;
+    --hex-crop-grape-soft: #DCFCE7;
+    --hex-crop-mango: #EA580C;
+    --hex-crop-mango-soft: #FFEDD5;
+    --hex-crop-arra: #7C3AED;
+    --hex-crop-arra-soft: #F3E8FF;
+    --hex-crop-guava: #0891B2;
+    --hex-crop-guava-soft: #CFFAFE;
+    --hex-map-land: #ECF3EE;
+    --hex-map-grid: #DCE6DF;
+    --hex-map-river: #7DD3FC;
+    --hex-map-river-edge: #38BDF8;
+    --hex-map-area: #A3B8AB;
+
+    --avatar-1: #DCFCE7;
+    --avatar-2: #FEF3C7;
+    --avatar-3: #F3E8FF;
+    --avatar-4: #CFFAFE;
+    --avatar-5: #FEE2E2;
+    --avatar-6: #E0E7FF;
+
+    --heat-1: #FDBA74;
+    --heat-2: #FB923C;
+    --heat-3: #EA580C;
+    --heat-4: #C2410C;
+    --heat-5: #7C2D12;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --color-canvas: 10 15 13;
+    --color-surface: 17 25 21;
+    --color-border: 31 45 37;
+    --color-border-strong: 47 68 56;
+
+    --color-ink: 240 253 244;
+    --color-ink-muted: 156 176 164;
+    --color-ink-subtle: 112 132 120;
+
+    --color-brand: 34 197 94;
+    --color-brand-hover: 22 163 74;
+    --color-brand-soft: 20 46 31;
+
+    --color-accent: 245 158 11;
+    --color-accent-vivid: 251 146 60;
+    --color-accent-soft: 52 34 14;
+
+    --color-danger: 248 113 113;
+    --color-danger-soft: 54 22 25;
+
+    --color-neutral: 100 118 108;
+    --color-neutral-soft: 25 37 31;
+
+    --color-crop-grape: 74 222 128;
+    --color-crop-grape-soft: 20 46 31;
+    --color-crop-mango: 251 146 60;
+    --color-crop-mango-soft: 52 32 16;
+    --color-crop-arra: 167 139 250;
+    --color-crop-arra-soft: 38 26 62;
+    --color-crop-guava: 34 211 238;
+    --color-crop-guava-soft: 16 44 54;
+
+    --color-map-land: 14 22 18;
+    --color-map-grid: 24 37 30;
+    --color-map-river: 14 116 144;
+    --color-map-river-edge: 21 94 117;
+    --color-map-area: 48 68 56;
+
+    /* Hex diretos para atributos SVG e Recharts em Dark Mode */
+    --hex-canvas: #0A0F0D;
+    --hex-surface: #111915;
+    --hex-border: #1F2D25;
+    --hex-border-strong: #2F4438;
+    --hex-ink: #F0FDF4;
+    --hex-ink-muted: #9CB0A4;
+    --hex-ink-subtle: #708478;
+    --hex-brand: #22C55E;
+    --hex-brand-hover: #16A34A;
+    --hex-brand-soft: #142E1F;
+    --hex-accent: #F59E0B;
+    --hex-accent-vivid: #FB923C;
+    --hex-accent-soft: #34220E;
+    --hex-danger: #F87171;
+    --hex-danger-soft: #361619;
+    --hex-neutral: #64766C;
+    --hex-neutral-soft: #19251F;
+    --hex-crop-grape: #4ADE80;
+    --hex-crop-grape-soft: #142E1F;
+    --hex-crop-mango: #FB923C;
+    --hex-crop-mango-soft: #342010;
+    --hex-crop-arra: #A78BFA;
+    --hex-crop-arra-soft: #261A3E;
+    --hex-crop-guava: #22D3EE;
+    --hex-crop-guava-soft: #102C36;
+    --hex-map-land: #0E1612;
+    --hex-map-grid: #18251E;
+    --hex-map-river: #0E7490;
+    --hex-map-river-edge: #155E75;
+    --hex-map-area: #304438;
+
+    --avatar-1: #163824;
+    --avatar-2: #3A2610;
+    --avatar-3: #2C1C46;
+    --avatar-4: #12323E;
+    --avatar-5: #3A181C;
+    --avatar-6: #1C2644;
+
+    --heat-1: #7C2D12;
+    --heat-2: #9A3412;
+    --heat-3: #C2410C;
+    --hex-heat-4: #EA580C;
+    --heat-4: #EA580C;
+    --heat-5: #FB923C;
+  }
+
   html {
-    @apply bg-canvas text-ink antialiased;
+    @apply bg-canvas text-ink antialiased transition-colors duration-200;
     font-feature-settings: 'ss01', 'cv11';
   }
   body {
@@ -21,7 +194,12 @@
 @layer components {
   .skeleton {
     @apply rounded-md bg-neutral-soft;
-    background-image: linear-gradient(90deg, transparent 0, rgba(255, 255, 255, 0.7) 50%, transparent 100%);
+    background-image: linear-gradient(
+      90deg,
+      transparent 0,
+      rgb(var(--color-surface) / 0.6) 50%,
+      transparent 100%
+    );
     background-size: 400px 100%;
     background-repeat: no-repeat;
     @apply animate-shimmer motion-reduce:animate-none;

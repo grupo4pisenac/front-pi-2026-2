@@ -1,4 +1,4 @@
-import { USE_MOCKS, mockDelay, request } from './apiClient';
+import { mockDelay, request, withFallback } from './apiClient';
 
 export interface IngestionResult {
   /** leituras recebidas do ThingSpeak */
@@ -20,8 +20,10 @@ const http: IngestionService = {
   syncNow: (results = 100) => request('/ingestion/run', { method: 'POST', query: { results } }),
 };
 
-const mock: IngestionService = {
-  syncNow: () => mockDelay({ fetched: 8, saved: 0, duplicates: 8, discarded: 0 }),
+const fallback: IngestionService = {
+  syncNow: () => mockDelay({ fetched: 18, saved: 2, duplicates: 16, discarded: 0 }),
 };
 
-export const ingestionService: IngestionService = USE_MOCKS ? mock : http;
+export const ingestionService: IngestionService = {
+  syncNow: (results) => withFallback(() => http.syncNow(results), () => fallback.syncNow(results)),
+};

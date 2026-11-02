@@ -7,11 +7,9 @@ import { useNow } from '@/hooks/useNow';
 import { greetingFor } from '@/lib/greeting';
 import { firstName } from '@/lib/formatters';
 import { exportReadings } from './exportReadings';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { Skeleton } from '@/components/ui';
 import { useActivePlots, useClimateSeries, useDashboardSummary, useHarvestForecast, useTodayReadings } from './queries';
+import { AgroHeroBanner } from './components/AgroHeroBanner';
 import { ClimateChartCard } from './components/ClimateChartCard';
-import { LiveIndicator } from './components/LiveIndicator';
 import { DashboardKpis } from './components/DashboardKpis';
 import { HarvestForecastCard } from './components/HarvestForecastCard';
 import { ActivePlotsCard } from './components/ActivePlotsCard';
@@ -26,15 +24,20 @@ export function DashboardPage() {
   const forecast = useHarvestForecast(cropId);
   const plots = useActivePlots();
   const readings = useTodayReadings();
-  // O painel mostra sempre as últimas 24 h; períodos maiores ficam na página Clima
   const series = useClimateSeries('24h');
+
+  const greeting = user ? `${greetingFor(new Date(now))}, ${firstName(user.name)}` : 'Monitoramento operacional';
 
   return (
     <>
-      <PageHeader
-        eyebrow="Visão geral"
-        title={user ? `${greetingFor(new Date(now))}, ${firstName(user.name)}` : <Skeleton className="h-10 w-72" />}
-        subtitle={<LiveIndicator lastReadingAt={summary.data?.lastReadingAt} now={now} />}
+      <AgroHeroBanner
+        greeting={greeting}
+        lastReadingAt={summary.data?.lastReadingAt}
+        now={now}
+        avgTemp={summary.data?.avgTemperatureC}
+        airHumidity={summary.data?.airHumidityPct}
+        onExport={() => readings.data && exportReadings(readings.data)}
+        canExport={!!readings.data?.length}
       />
 
       <div className="space-y-6">
@@ -78,7 +81,12 @@ export function DashboardPage() {
               onRetry={() => forecast.refetch()}
             />
           </div>
-          <ActivePlotsCard plots={plots.data} isLoading={plots.isLoading} isError={plots.isError} onRetry={() => plots.refetch()} />
+          <ActivePlotsCard
+            plots={plots.data}
+            isLoading={plots.isLoading}
+            isError={plots.isError}
+            onRetry={() => plots.refetch()}
+          />
         </div>
 
         <ClimateHistoryCard

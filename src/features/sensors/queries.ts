@@ -14,10 +14,19 @@ export const useStations = () =>
 export const useNetworkHealth = () =>
   useQuery({ queryKey: stationKeys.health, queryFn: () => stationsService.getHealth(), refetchInterval: 60_000 });
 
-export function useCreateStation() {
+export function useSaveStation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: StationInput) => stationsService.create(input),
+    mutationFn: ({ id, input }: { id?: string; input: StationInput }) =>
+      id ? stationsService.update(id, input) : stationsService.create(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: stationKeys.all }),
+  });
+}
+
+export function useDeleteStation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => stationsService.remove(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: stationKeys.all }),
   });
 }

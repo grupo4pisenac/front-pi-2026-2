@@ -2,7 +2,7 @@ import { ChevronDown, LogOut, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Role, User } from '@/types';
 import { ROLE_LABEL, ROLES } from '@/lib/rbac';
-import { USE_MOCKS } from '@/services/apiClient';
+import { tokenStorage, USE_MOCKS } from '@/services/apiClient';
 import { Avatar, Menu, Skeleton, type MenuItem } from '@/components/ui';
 
 interface UserMenuProps {
@@ -26,13 +26,14 @@ export function UserMenu({ user, onSimulateRole, onSignOut }: UserMenuProps) {
     );
   }
 
+  const canSimulate = USE_MOCKS || !tokenStorage.access || tokenStorage.access.startsWith('local_');
+
   const items: MenuItem[] = [
     { key: 'profile', label: 'Meu perfil', icon: <UserRound className="h-4 w-4" />, onSelect: () => navigate('/perfil') },
-    // Em modo mock, permite alternar o perfil para validar o RBAC sem backend
-    ...(USE_MOCKS
+    ...(canSimulate
       ? ROLES.map<MenuItem>((r) => ({
           key: r,
-          section: 'Simular perfil',
+          section: 'Simular perfil RBAC',
           label: ROLE_LABEL[r],
           checked: user.role === r,
           onSelect: () => onSimulateRole(r),

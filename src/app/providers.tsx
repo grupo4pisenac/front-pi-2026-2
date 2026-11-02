@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiError } from '@/services/apiClient';
 import { SessionProvider } from './session';
+import { ThemeProvider } from './theme';
 
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(
@@ -19,8 +20,10 @@ export function Providers({ children }: { children: ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={client}>
-      <SessionProvider>{children}</SessionProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={client}>
+        <SessionProvider>{children}</SessionProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

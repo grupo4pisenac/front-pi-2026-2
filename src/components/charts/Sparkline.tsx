@@ -3,7 +3,7 @@ import { chartColors } from '@/theme/tokens';
 
 interface SparklineProps {
   values: number[];
-  /** Cor do ponto atual (a série); a linha fica na cor de recuo */
+  /** Cor da série */
   color: string;
   label: string;
 }
@@ -21,7 +21,7 @@ function smooth(values: number[]): number[] {
   });
 }
 
-/** Tendência compacta para cartões de KPI: linha em tom de recuo, ponto atual na cor da série. */
+/** Tendência compacta para cartões de KPI */
 export function Sparkline({ values, color, label }: SparklineProps) {
   if (values.length < 2) return null;
   const data = smooth(values).map((v, i) => ({ i, v }));
@@ -34,8 +34,9 @@ export function Sparkline({ values, color, label }: SparklineProps) {
           <Line
             dataKey="v"
             type="monotone"
-            stroke={chartColors.reference}
-            strokeWidth={1.5}
+            stroke={color}
+            strokeOpacity={0.8}
+            strokeWidth={2}
             isAnimationActive={false}
             dot={(p: { index?: number; cx?: number; cy?: number }) =>
               p.index === last && p.cx !== undefined && p.cy !== undefined ? (
