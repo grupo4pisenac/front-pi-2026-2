@@ -141,14 +141,19 @@ export async function withFallback<T>(httpCall: () => Promise<T>, fallbackCall: 
   try {
     return await httpCall();
   } catch (err) {
-    const isOfflineError =
-      !(err instanceof ApiError) ||
-      (err.status >= 500 && (err.body === undefined || typeof err.body !== 'object'));
-    if (isOfflineError) {
+    if (isOfflineError(err)) {
       return fallbackCall();
     }
     throw err;
   }
+}
+
+/** Erro de rede ou 5xx sem o JSON da API: o backend está fora do ar (ou ainda acordando). */
+export function isOfflineError(err: unknown): boolean {
+  return (
+    !(err instanceof ApiError) ||
+    (err.status >= 500 && (err.body === undefined || typeof err.body !== 'object'))
+  );
 }
 
 /** Latência rápida para transições fluidas */

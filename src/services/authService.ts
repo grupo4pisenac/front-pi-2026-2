@@ -1,5 +1,5 @@
 import type { User } from '@/types';
-import { USE_MOCKS, mockDelay, request, tokenStorage, withFallback } from './apiClient';
+import { ApiError, USE_MOCKS, isOfflineError, mockDelay, request, tokenStorage } from './apiClient';
 import { currentUserId, usersDb } from './mocks/data';
 
 export interface LoginInput {
@@ -72,8 +72,23 @@ const fallback: AuthService = {
   isAuthenticated: () => http.isAuthenticated(),
 };
 
+/**
+ * Com o backend real, o login nunca cai no mock: se o servidor estiver fora do ar,
+ * é melhor avisar do que fingir que o login deu certo com um token local.
+ */
+async function loginWithBackend(input: LoginInput): Promise<User> {
+  try {
+    return await http.login(input);
+  } catch (err) {
+    if (isOfflineError(err)) {
+      throw new ApiError(503, 'Servidor indisponível no momento. Tente novamente em instantes.');
+    }
+    throw err;
+  }
+}
+
 export const authService: AuthService = {
-  login: (input) => withFallback(() => http.login(input), () => fallback.login(input)),
+  login: (input) => (USE_MOCKS ? fallback.login(input) : loginWithBackend(input)),
   logout: () => http.logout(),
   isAuthenticated: () => fallback.isAuthenticated(),
 };
