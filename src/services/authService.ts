@@ -1,5 +1,5 @@
 import type { User } from '@/types';
-import { mockDelay, request, tokenStorage, withFallback } from './apiClient';
+import { USE_MOCKS, mockDelay, request, tokenStorage, withFallback } from './apiClient';
 import { currentUserId, usersDb } from './mocks/data';
 
 export interface LoginInput {
@@ -43,7 +43,11 @@ const http: AuthService = {
   },
   isAuthenticated: () => {
     if (tokenStorage.access !== null) return true;
-    // Garante entrada direta caso o usuário ainda não tenha clicado em "Sair"
+    // Com o backend real, só há sessão se houver um token emitido por ele. Fabricar um token
+    // local aqui faz o /auth/me responder 401 → redirect para /login → novo token local →
+    // volta para "/" → 401… num loop infinito de recarregamentos (a tela "pisca").
+    if (!USE_MOCKS) return false;
+    // Modo mock: garante entrada direta caso o usuário ainda não tenha clicado em "Sair"
     if (window.localStorage.getItem(LOGGED_OUT_KEY) !== 'true') {
       tokenStorage.set(`local_access_${currentUserId}`, `local_refresh_${currentUserId}`);
       return true;
