@@ -47,9 +47,40 @@ export const tokenStorage = {
 
 export const LOGIN_PATH = '/login';
 
-/** Sessão expirada e sem refresh válido: limpa os tokens e volta para o login. */
+/* ─────────────── Aviso exibido na tela de login após um redirect ─────────────── */
+
+const LOGIN_NOTICE_KEY = 'barto.loginNotice';
+
+export const loginNotice = {
+  set(message: string) {
+    try {
+      window.sessionStorage.setItem(LOGIN_NOTICE_KEY, message);
+    } catch {
+      /* storage indisponível: segue sem o aviso */
+    }
+  },
+  peek(): string | null {
+    try {
+      return window.sessionStorage.getItem(LOGIN_NOTICE_KEY);
+    } catch {
+      return null;
+    }
+  },
+  clear() {
+    try {
+      window.sessionStorage.removeItem(LOGIN_NOTICE_KEY);
+    } catch {
+      /* nada a limpar */
+    }
+  },
+};
+
+export const SESSION_EXPIRED_MESSAGE = 'Sua sessão expirou ou não é mais válida. Entre novamente.';
+
+/** Sessão expirada e sem refresh válido: limpa os tokens e volta para o login com um aviso. */
 function redirectToLogin() {
   tokenStorage.clear();
+  loginNotice.set(SESSION_EXPIRED_MESSAGE);
   if (window.location.pathname !== LOGIN_PATH) {
     const next = encodeURIComponent(window.location.pathname + window.location.search);
     window.location.assign(`${LOGIN_PATH}?next=${next}`);
@@ -105,6 +136,24 @@ function send(path: string, opts: RequestOptions): Promise<Response> {
   });
 }
 
+const DEFAULT_MESSAGES: Record<number, string> = {
+  400: 'Requisição inválida.',
+  401: 'Não autorizado. Verifique suas credenciais e entre novamente.',
+  403: 'Você não tem permissão para realizar esta ação.',
+  404: 'Recurso não encontrado.',
+  422: 'Dados inválidos. Revise os campos e tente novamente.',
+  429: 'Muitas tentativas. Aguarde um instante e tente novamente.',
+};
+
+/** Usa a mensagem do backend (`message` ou `detail` do FastAPI); senão, uma mensagem padrão pelo status. */
+function errorMessage(status: number, body: unknown): string {
+  if (typeof body === 'object' && body !== null) {
+    if ('message' in body && typeof body.message === 'string' && body.message) return body.message;
+    if ('detail' in body && typeof body.detail === 'string' && body.detail) return body.detail;
+  }
+  return DEFAULT_MESSAGES[status] ?? `Falha na requisição (${status}).`;
+}
+
 export async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   let res = await send(path, opts);
 
@@ -120,11 +169,7 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
     } catch {
       body = undefined;
     }
-    const message =
-      typeof body === 'object' && body !== null && 'message' in body && typeof body.message === 'string'
-        ? body.message
-        : `Falha na requisição (${res.status})`;
-    throw new ApiError(res.status, message, body);
+    throw new ApiError(res.status, errorMessage(res.status, body), body);
   }
 
   if (res.status === 204) return undefined as T;

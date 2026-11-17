@@ -42,7 +42,14 @@ const http: AuthService = {
     }
   },
   isAuthenticated: () => {
-    if (tokenStorage.access !== null) return true;
+    const access = tokenStorage.access;
+    // Token local (gerado em modo mock/offline) não vale no backend real: descarta em vez de
+    // mandá-lo ao servidor e receber 401 em toda requisição.
+    if (access !== null && !USE_MOCKS && access.startsWith('local_')) {
+      tokenStorage.clear();
+      return false;
+    }
+    if (access !== null) return true;
     // Com o backend real, só há sessão se houver um token emitido por ele. Fabricar um token
     // local aqui faz o /auth/me responder 401 → redirect para /login → novo token local →
     // volta para "/" → 401… num loop infinito de recarregamentos (a tela "pisca").

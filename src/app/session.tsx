@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Role, User } from '@/types';
 import { usersService } from '@/services/usersService';
 import { authService } from '@/services/authService';
-import { ApiError, LOGIN_PATH, tokenStorage } from '@/services/apiClient';
+import { ApiError, LOGIN_PATH, SESSION_EXPIRED_MESSAGE, loginNotice, tokenStorage } from '@/services/apiClient';
 
 const SESSION_KEY = ['session', 'me'] as const;
 
@@ -36,6 +36,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // Conta desativada ou removida com a sessão aberta: o back recusa o /auth/me (4xx) — volta ao login
   useEffect(() => {
     if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
+      loginNotice.set(error.status === 401 ? SESSION_EXPIRED_MESSAGE : error.message);
       tokenStorage.clear();
       queryClient.clear();
       setAuthenticated(false);

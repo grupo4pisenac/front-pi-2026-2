@@ -1,16 +1,24 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Mail, RadioTower, ShieldCheck, Sprout } from 'lucide-react';
 import { useSession } from '@/app/session';
 import { ThemeToggle } from '@/app/theme';
 import { authService } from '@/services/authService';
-import { ApiError } from '@/services/apiClient';
+import { ApiError, loginNotice } from '@/services/apiClient';
 import { Logo } from '@/components/layout/Logo';
 import { Button, Card, Field, Input } from '@/components/ui';
 
 /** Só aceita caminhos internos no ?next= (evita open redirect) */
 function safeNext(next: string | null): string {
   return next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
+}
+
+/** Mensagem amigável para falhas de login, priorizando a resposta do backend. */
+function loginErrorMessage(err: unknown): string {
+  if (!(err instanceof ApiError)) return 'Não foi possível conectar ao servidor.';
+  if (err.status === 401) return err.message || 'E-mail ou senha incorretos.';
+  if (err.status === 403) return err.message || 'Sua conta não tem acesso à plataforma.';
+  return err.message;
 }
 
 const SEED_ACCOUNTS = [
@@ -29,18 +37,25 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Aviso deixado por um redirect (ex.: sessão expirada / 401 do backend)
+  const [notice, setNotice] = useState<string | null>(() => loginNotice.peek());
+
+  useEffect(() => {
+    loginNotice.clear();
+  }, []);
 
   if (isAuthenticated) return <Navigate to={next} replace />;
 
   const performLogin = async (loginEmail: string, loginPassword: string) => {
     setSubmitting(true);
     setError(null);
+    setNotice(null);
     try {
       const user = await authService.login({ email: loginEmail.trim().toLowerCase(), password: loginPassword });
       signIn(user);
       navigate(next, { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Não foi possível conectar ao servidor.');
+      setError(loginErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -135,6 +150,11 @@ export function LoginPage() {
                   />
                 )}
               </Field>
+              {notice && !error && (
+                <p role="status" className="rounded-tile bg-danger-soft px-3 py-2 text-[13px] text-danger">
+                  {notice}
+                </p>
+              )}
               {error && (
                 <p role="alert" className="rounded-tile bg-danger-soft px-3 py-2 text-[13px] text-danger">
                   {error}
