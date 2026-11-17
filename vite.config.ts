@@ -11,8 +11,17 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 5173,
-      // Em dev, /api é repassado para o backend FastAPI quando VITE_USE_MOCKS=false
-      proxy: { '/api': env.VITE_API_PROXY_TARGET || 'http://localhost:8000' },
+      // Em dev, /api é repassado para o backend FastAPI quando VITE_USE_MOCKS=false.
+      // No backend hospedado as rotas de autenticação ficam em /auth/* (sem prefixo /api),
+      // enquanto as demais ficam em /api/*; por isso /api/auth/* é reescrito para /auth/*.
+      proxy: {
+        '/api': {
+          target: env.VITE_API_PROXY_TARGET || 'http://localhost:8000',
+          changeOrigin: true, // necessário para o Azure Container Apps (HTTPS + roteamento por Host)
+          secure: true,
+          rewrite: (path) => path.replace(/^\/api\/auth(?=\/|\?|$)/, '/auth'),
+        },
+      },
     },
   };
 });

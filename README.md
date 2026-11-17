@@ -1,6 +1,6 @@
 # bartô.io — Endpoints para integração Front ↔ Back
 
-> Base URL: `/api` (`VITE_API_BASE_URL`), que o Vite repassa para `VITE_API_PROXY_TARGET` (padrão `http://localhost:8000`)
+> Base URL: `/api` (`VITE_API_BASE_URL`), que o Vite repassa para `VITE_API_PROXY_TARGET` (padrão `http://localhost:8000`; o backend hospedado é `https://barto-api.bluewave-9ade234a.brazilsouth.azurecontainerapps.io`). Como lá a autenticação fica em `/auth/*` e o resto em `/api/*`, o proxy do Vite (e o rewrite do `vercel.json`) converte `/api/auth/*` em `/auth/*`
 > Auth: `Authorization: Bearer <jwt>`. O front guarda os tokens em `localStorage['barto.token']` e `localStorage['barto.refreshToken']`
 > Mocks: ligar com `VITE_USE_MOCKS=true`. No modo mock o login é ignorado e o menu do usuário permite simular perfis
 
