@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/api': {
           target: env.VITE_API_PROXY_TARGET || 'http://localhost:8000',
-          changeOrigin: true, // necessário para o Azure Container Apps (HTTPS + roteamento por Host)
+          changeOrigin: true, // necessário para o Render (HTTPS + roteamento por Host)
           secure: true,
           rewrite: (path) => path.replace(/^\/api\/auth(?=\/|\?|$)/, '/auth'),
         },
