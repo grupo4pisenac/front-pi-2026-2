@@ -5,6 +5,10 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/auth/:path*",
+      "destination": "https://barto-api.bluewave-9ade234a.brazilsouth.azurecontainerapps.io/auth/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://barto-api.bluewave-9ade234a.brazilsouth.azurecontainerapps.io/api/:path*"
     },
