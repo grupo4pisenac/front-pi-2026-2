@@ -42,6 +42,8 @@ export const tailwindColors = {
     'arra-soft': twColor('--color-crop-arra-soft'),
     guava: twColor('--color-crop-guava'),
     'guava-soft': twColor('--color-crop-guava-soft'),
+    moscatel: twColor('--color-crop-moscatel'),
+    'moscatel-soft': twColor('--color-crop-moscatel-soft'),
   },
   map: {
     land: twColor('--color-map-land'),
@@ -89,6 +91,8 @@ export const palette = {
     'arra-soft': hexVar('--hex-crop-arra-soft'),
     guava: hexVar('--hex-crop-guava'),
     'guava-soft': hexVar('--hex-crop-guava-soft'),
+    moscatel: hexVar('--hex-crop-moscatel'),
+    'moscatel-soft': hexVar('--hex-crop-moscatel-soft'),
   },
   map: {
     land: hexVar('--hex-map-land'),

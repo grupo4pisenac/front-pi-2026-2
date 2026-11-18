@@ -13,7 +13,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { Station } from '@/types';
-import { CROPS } from '@/lib/crops';
+import { getCrop } from '@/lib/crops';
 import { cn } from '@/lib/cn';
 import { formatPercent, formatRelative } from '@/lib/formatters';
 import { Badge, Button, DataTable, EmptyState, Menu, type Column, type MenuItem } from '@/components/ui';
@@ -84,7 +84,7 @@ function buildColumns(
       key: 'product',
       header: 'Produto',
       render: (s) => {
-        const crop = CROPS[s.productId];
+        const crop = getCrop(s.productId);
         return (
           <span className="inline-flex items-center gap-2">
             <span aria-hidden className={cn('inline-flex h-6 w-6 items-center justify-center rounded-md', crop.softClass, crop.textClass)}>

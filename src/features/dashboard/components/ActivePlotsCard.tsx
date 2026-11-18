@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Sprout } from 'lucide-react';
 import type { Plot } from '@/types';
-import { CROPS } from '@/lib/crops';
+import { getCrop } from '@/lib/crops';
 import { formatInteger, formatPercent } from '@/lib/formatters';
 import { Card, CardBody, CardHeader, EmptyState, ErrorState, IconTile, ProgressBar, Skeleton } from '@/components/ui';
 
@@ -14,7 +14,7 @@ interface ActivePlotsCardProps {
 }
 
 function PlotRow({ plot }: { plot: Plot }) {
-  const crop = CROPS[plot.cropId];
+  const crop = getCrop(plot.cropId);
   return (
     <li className="-mx-2 rounded-tile px-2 py-3 transition-colors duration-150 ease-out hover:bg-canvas/70">
       <div className="flex items-center gap-3.5">

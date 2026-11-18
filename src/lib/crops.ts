@@ -1,4 +1,4 @@
-import { Apple, Citrus, Grape, type LucideIcon } from 'lucide-react';
+import { Apple, Citrus, Grape, Sprout, type LucideIcon } from 'lucide-react';
 import type { CropId } from '@/types';
 import { palette } from '@/theme/tokens';
 
@@ -50,6 +50,35 @@ export const CROPS: Record<CropId, CropMeta> = {
     softClass: 'bg-crop-guava-soft',
     color: palette.crop.guava,
   },
+  UVA_MOSCATEL: {
+    label: 'Uva Moscatel',
+    short: 'Moscatel',
+    icon: Grape,
+    textClass: 'text-crop-moscatel',
+    bgClass: 'bg-crop-moscatel',
+    softClass: 'bg-crop-moscatel-soft',
+    color: palette.crop.moscatel,
+  },
 };
 
 export const CROP_IDS = Object.keys(CROPS) as CropId[];
+
+/** Usado quando o backend envia uma cultura que o front ainda não conhece. */
+const UNKNOWN_CROP: Omit<CropMeta, 'label' | 'short'> = {
+  icon: Sprout,
+  textClass: 'text-ink-muted',
+  bgClass: 'bg-neutral',
+  softClass: 'bg-neutral-soft',
+  color: palette.neutral.DEFAULT,
+};
+
+/**
+ * Metadados da cultura sem quebrar a tela: se o id não estiver em CROPS (ex.: o backend
+ * passou a aceitar uma cultura nova), devolve um visual neutro com o próprio id como rótulo.
+ */
+export function getCrop(id: string | null | undefined): CropMeta {
+  const known = id ? CROPS[id as CropId] : undefined;
+  if (known) return known;
+  const label = id ? id.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : 'Não informado';
+  return { ...UNKNOWN_CROP, label, short: label };
+}

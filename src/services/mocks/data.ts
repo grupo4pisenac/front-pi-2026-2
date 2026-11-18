@@ -171,6 +171,7 @@ export const PRODUCTION_BY_CROP: Record<CropId, number[]> = {
   MANGA_PALMER: [120, 110, 96, 84, 80, 92, 104, 128, 152, 170, 186, 178],
   UVA_ARRA: [44, 50, 56, 60, 66, 63, 70, 78, 86, 92, 98, 101],
   GOIABA_PALUMA: [30, 32, 35, 38, 36, 34, 37, 41, 45, 48, 52, 50],
+  UVA_MOSCATEL: [28, 31, 35, 39, 42, 40, 45, 51, 57, 62, 66, 68],
 };
 
 export function buildForecast(cropId: CropId): HarvestForecast {

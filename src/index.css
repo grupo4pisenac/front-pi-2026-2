@@ -36,6 +36,8 @@
     --color-crop-arra-soft: 243 232 255;
     --color-crop-guava: 8 145 178;
     --color-crop-guava-soft: 207 250 254;
+    --color-crop-moscatel: 219 39 119;
+    --color-crop-moscatel-soft: 252 231 243;
 
     --color-map-land: 236 243 238;
     --color-map-grid: 220 230 223;
@@ -69,6 +71,8 @@
     --hex-crop-arra-soft: #F3E8FF;
     --hex-crop-guava: #0891B2;
     --hex-crop-guava-soft: #CFFAFE;
+    --hex-crop-moscatel: #DB2777;
+    --hex-crop-moscatel-soft: #FCE7F3;
     --hex-map-land: #ECF3EE;
     --hex-map-grid: #DCE6DF;
     --hex-map-river: #7DD3FC;
@@ -122,6 +126,8 @@
     --color-crop-arra-soft: 38 26 62;
     --color-crop-guava: 34 211 238;
     --color-crop-guava-soft: 16 44 54;
+    --color-crop-moscatel: 244 114 182;
+    --color-crop-moscatel-soft: 58 22 39;
 
     --color-map-land: 14 22 18;
     --color-map-grid: 24 37 30;
@@ -155,6 +161,8 @@
     --hex-crop-arra-soft: #261A3E;
     --hex-crop-guava: #22D3EE;
     --hex-crop-guava-soft: #102C36;
+    --hex-crop-moscatel: #F472B6;
+    --hex-crop-moscatel-soft: #3A1627;
     --hex-map-land: #0E1612;
     --hex-map-grid: #18251E;
     --hex-map-river: #0E7490;

@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import type { CropId, HarvestForecast } from '@/types';
-import { CROPS, CROP_IDS } from '@/lib/crops';
+import { CROPS, CROP_IDS, getCrop } from '@/lib/crops';
 import { formatCelsius, formatTons } from '@/lib/formatters';
 import { Card, CardBody, CardHeader, ErrorState, Select, Skeleton } from '@/components/ui';
 import { ChartLegend } from '@/components/charts/ChartParts';
@@ -32,7 +32,7 @@ function summarize(f: HarvestForecast): string {
   const first = pts[0]!;
   const last = pts[pts.length - 1]!;
   return (
-    `${CROPS[f.cropId].label}: produção vai de ${formatTons(first.productionT)} em ${first.period} ` +
+    `${getCrop(f.cropId).label}: produção vai de ${formatTons(first.productionT)} em ${first.period} ` +
     `a ${formatTons(last.productionT)} em ${last.period}, com pico de ${formatTons(peak.productionT)} em ${peak.period}. ` +
     `Normal climatológica mais quente: ${formatCelsius(hottest.avgTemperatureC, 1)} em ${hottest.period}.` +
     measuredSummary(pts)

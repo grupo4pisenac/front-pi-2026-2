@@ -3,7 +3,7 @@ import { useQueries } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipProps } from 'recharts';
 import { Calendar, CheckCircle2, Layers, MapPin, Sprout, TrendingUp } from 'lucide-react';
 import type { CropId, HarvestForecast } from '@/types';
-import { CROPS, CROP_IDS } from '@/lib/crops';
+import { CROPS, CROP_IDS, getCrop } from '@/lib/crops';
 import { cn } from '@/lib/cn';
 import { formatInteger, formatPercent, formatTons, THIN } from '@/lib/formatters';
 import { dashboardService } from '@/services/dashboardService';
@@ -20,16 +20,11 @@ const CROP_IMAGES: Record<CropId, string> = {
   MANGA_PALMER: 'https://images.unsplash.com/photo-1553279768-865429fa0078?auto=format&fit=crop&w=800&q=80',
   UVA_ARRA: 'https://images.unsplash.com/photo-1596363505729-4190a9506133?auto=format&fit=crop&w=800&q=80',
   GOIABA_PALUMA: 'https://images.unsplash.com/photo-1536511132770-e5058c7e8c46?auto=format&fit=crop&w=800&q=80',
+  UVA_MOSCATEL: 'https://images.unsplash.com/photo-1596363505729-4190a9506133?auto=format&fit=crop&w=800&q=80',
 };
+const FALLBACK_CROP_IMAGE = CROP_IMAGES.UVA_SUGRAONE;
 
-interface MultiCropPoint {
-  period: string;
-  UVA_SUGRAONE: number;
-  MANGA_PALMER: number;
-  UVA_ARRA: number;
-  GOIABA_PALUMA: number;
-  total: number;
-}
+type MultiCropPoint = { period: string; total: number } & Record<CropId, number>;
 
 function MultiCropTooltip({ active, payload, label }: TooltipProps<number, string>) {
   if (!active || !payload?.length) return null;
@@ -55,7 +50,7 @@ export function ForecastPage() {
   const forecast = useHarvestForecast(selectedCrop);
   const compareTitleId = useId();
 
-  // Busca as séries das 4 culturas diretamente do endpoint /forecasts/harvest do backend
+  // Busca as séries de todas as culturas diretamente do endpoint /forecasts/harvest do backend
   const allForecasts = useQueries({
     queries: CROP_IDS.map((id) => ({
       queryKey: ['dashboard', 'forecast', id] as const,
@@ -70,18 +65,13 @@ export function ForecastPage() {
     });
     const base = byCrop.get('UVA_SUGRAONE')?.points ?? [];
     return base.map((pt, i) => {
-      const u = byCrop.get('UVA_SUGRAONE')?.points[i]?.productionT ?? 0;
-      const m = byCrop.get('MANGA_PALMER')?.points[i]?.productionT ?? 0;
-      const a = byCrop.get('UVA_ARRA')?.points[i]?.productionT ?? 0;
-      const g = byCrop.get('GOIABA_PALUMA')?.points[i]?.productionT ?? 0;
-      return {
-        period: pt.period,
-        UVA_SUGRAONE: u,
-        MANGA_PALMER: m,
-        UVA_ARRA: a,
-        GOIABA_PALUMA: g,
-        total: u + m + a + g,
-      };
+      const point = { period: pt.period, total: 0 } as MultiCropPoint;
+      for (const id of CROP_IDS) {
+        const value = byCrop.get(id)?.points[i]?.productionT ?? 0;
+        point[id] = value;
+        point.total += value;
+      }
+      return point;
     });
   }, [allForecasts]);
 
@@ -111,7 +101,7 @@ export function ForecastPage() {
         {/* KPIs de Safra */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label={`Volume anual · ${CROPS[selectedCrop].short}`}
+            label={`Volume anual · ${getCrop(selectedCrop).short}`}
             icon={TrendingUp}
             value={
               <>
@@ -176,7 +166,7 @@ export function ForecastPage() {
           ) : (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
               {(plots.data ?? []).map((plot) => {
-                const crop = CROPS[plot.cropId];
+                const crop = getCrop(plot.cropId);
                 const isSelected = selectedCrop === plot.cropId;
                 return (
                   <button
@@ -193,7 +183,7 @@ export function ForecastPage() {
                   >
                     <div className="relative h-28 w-full overflow-hidden bg-neutral-soft">
                       <img
-                        src={CROP_IMAGES[plot.cropId]}
+                        src={CROP_IMAGES[plot.cropId] ?? FALLBACK_CROP_IMAGE}
                         alt={crop.label}
                         loading="lazy"
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
