@@ -15,7 +15,8 @@ const READ_CORE: Permission[] = [
  */
 export const ROLE_PERMISSIONS: Record<Role, ReadonlySet<Permission>> = {
   ADMIN: new Set<Permission>([...READ_CORE, 'analytics:read', 'sensors:write', 'users:read', 'users:write']),
-  ANALISTA_DADOS: new Set<Permission>([...READ_CORE, 'analytics:read', 'users:read']),
+  // Analista não vê Usuários e Acessos (gestão de usuários é exclusiva do ADMIN)
+  ANALISTA_DADOS: new Set<Permission>([...READ_CORE, 'analytics:read']),
   PRODUTOR_EXPORTADOR: new Set<Permission>(READ_CORE),
 };
 
