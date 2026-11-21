@@ -17,6 +17,7 @@ import { exportReadings } from '@/features/dashboard/exportReadings';
 import { DailyClimateCard } from './components/DailyClimateCard';
 import { HourlyHeatmapCard } from './components/HourlyHeatmapCard';
 import { RangeFilter } from './components/RangeFilter';
+import { SoilMoistureChartCard } from './components/SoilMoistureChartCard';
 
 function describeSync(r: IngestionResult): string {
   if (r.fetched === 0) return 'O canal do ThingSpeak ainda não tem leituras.';
@@ -111,10 +112,20 @@ export function ClimatePage() {
           <SectionTitle
             id="clima-serie"
             title="Leituras da estação"
-            description="Temperatura e umidade do ar ao longo do período escolhido."
+            description="Temperatura, umidade do ar e umidade do solo ao longo do período escolhido."
             action={<RangeFilter value={range} onChange={setRange} />}
           />
           <ClimateChartCard
+            range={range}
+            now={now}
+            readings={series.data}
+            isLoading={series.isLoading}
+            isRefreshing={series.isPlaceholderData}
+            isError={series.isError}
+            onRetry={() => series.refetch()}
+          />
+                    <SoilMoistureChartCard
+            className="mt-6"
             range={range}
             now={now}
             readings={series.data}
