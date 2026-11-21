@@ -118,6 +118,7 @@ export const chartColors = {
   production: palette.brand.DEFAULT,
   temperature: palette.accent.vivid,
   humidity: palette.crop.guava,
+  soilMoisture: palette.crop.arra,
   vpd: palette.brand.DEFAULT,
   reference: palette.neutral.DEFAULT,
   threshold: palette.accent.DEFAULT,
