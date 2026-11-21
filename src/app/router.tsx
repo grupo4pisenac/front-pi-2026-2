@@ -5,6 +5,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { RequirePermission } from '@/components/auth/RequirePermission';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { LoginPage } from '@/pages/LoginPage';
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { Skeleton } from '@/components/ui';
 
 // Code-splitting por rota
@@ -24,6 +25,7 @@ const guard = (permission: Permission, element: ReactNode) => (
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  { path: '/esqueci-senha', element: <ForgotPasswordPage /> },
   {
     path: '/',
     element: <AppShell />,
