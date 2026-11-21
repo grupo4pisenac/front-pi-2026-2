@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Mail, RadioTower, ShieldCheck, Sprout } from 'lucide-react';
 import { useSession } from '@/app/session';
 import { ThemeToggle } from '@/app/theme';
@@ -150,6 +150,11 @@ export function LoginPage() {
                   />
                 )}
               </Field>
+              <div className="-mt-2 flex justify-end">
+                <Link to="/esqueci-senha" className="text-[13px] font-semibold text-brand hover:underline">
+                  Esqueci minha senha
+                </Link>
+              </div>
               {notice && !error && (
                 <p role="status" className="rounded-tile bg-danger-soft px-3 py-2 text-[13px] text-danger">
                   {notice}
