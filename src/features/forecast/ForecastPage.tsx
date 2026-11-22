@@ -1,19 +1,21 @@
 import { useId, useMemo, useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipProps } from 'recharts';
-import { Calendar, CheckCircle2, Layers, MapPin, Sprout, TrendingUp } from 'lucide-react';
+import { Calendar, CheckCircle2, Layers, MapPin, Pencil, Sprout, TrendingUp } from 'lucide-react';
 import type { CropId, HarvestForecast } from '@/types';
 import { CROPS, CROP_IDS, getCrop } from '@/lib/crops';
 import { cn } from '@/lib/cn';
 import { formatInteger, formatPercent, formatTons, THIN } from '@/lib/formatters';
 import { dashboardService } from '@/services/dashboardService';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Badge, Card, CardBody, CardHeader, ProgressBar, Skeleton, StatCard } from '@/components/ui';
+import { Badge, Button, Card, CardBody, CardHeader, ProgressBar, Skeleton, StatCard } from '@/components/ui';
+import { Can } from '@/components/auth/Can';
 import { ChartFrame } from '@/components/charts/ChartFrame';
 import { ChartLegend, TooltipRow, TooltipShell } from '@/components/charts/ChartParts';
 import { gridProps, tickStyle } from '@/components/charts/chartTheme';
 import { useActivePlots, useHarvestForecast } from '@/features/dashboard/queries';
 import { HarvestForecastCard } from '@/features/dashboard/components/HarvestForecastCard';
+import { EditForecastModal } from './components/EditForecastModal';
 
 const CROP_IMAGES: Record<CropId, string> = {
   UVA_SUGRAONE: 'https://images.unsplash.com/photo-1537640538966-79f369143f8f?auto=format&fit=crop&w=800&q=80',
@@ -46,6 +48,7 @@ function MultiCropTooltip({ active, payload, label }: TooltipProps<number, strin
 
 export function ForecastPage() {
   const [selectedCrop, setSelectedCrop] = useState<CropId>('UVA_SUGRAONE');
+  const [editOpen, setEditOpen] = useState(false);
   const plots = useActivePlots();
   const forecast = useHarvestForecast(selectedCrop);
   const compareTitleId = useId();
@@ -95,6 +98,19 @@ export function ForecastPage() {
         eyebrow="Planejamento Agrícola"
         title="Safra & Talhões"
         subtitle="Projeções mensais de colheita por cultura, correlação térmica (normal climatológica × estação) e ciclo fenológico dos lotes ativos."
+        action={
+          <Can permission="forecast:write">
+            <Button variant="primary" leftIcon={<Pencil aria-hidden className="h-4 w-4" />} onClick={() => setEditOpen(true)}>
+              Editar parâmetros
+            </Button>
+          </Can>
+        }
+      />
+      <EditForecastModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        initialCrop={selectedCrop}
+        onSaved={setSelectedCrop}
       />
 
       <div className="space-y-8">
