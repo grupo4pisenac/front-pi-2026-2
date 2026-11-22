@@ -13,6 +13,7 @@ const PERMISSION_META: { key: Permission; label: string; description: string }[]
   { key: 'climate:read', label: 'Clima & Telemetria', description: 'Consultar séries históricas, amplitude diária e mapa de calor' },
   { key: 'irrigation:read', label: 'Irrigação & VPD', description: 'Acessar cálculo de demanda evaporativa e janela ideal de rega' },
   { key: 'forecast:read', label: 'Safra & Talhões', description: 'Consultar curvas de previsão de colheita e avanço fenológico' },
+  { key: 'forecast:write', label: 'Ajuste de previsões', description: 'Editar a produção mensal projetada de cada cultura' },
   { key: 'sensors:read', label: 'Mapa de estações', description: 'Monitorar saúde da rede e localização das estações ESP32' },
   { key: 'sensors:write', label: 'Gestão de estações & ingestão', description: 'Cadastrar/editar sensores e sincronizar ThingSpeak manualmente' },
   { key: 'users:read', label: 'Consulta de usuários', description: 'Listar membros da equipe e estatísticas de acesso' },
