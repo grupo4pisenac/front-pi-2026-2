@@ -14,9 +14,9 @@ const READ_CORE: Permission[] = [
  * mantenha sincronizada com as authorities emitidas pelo Spring Security.
  */
 export const ROLE_PERMISSIONS: Record<Role, ReadonlySet<Permission>> = {
-  ADMIN: new Set<Permission>([...READ_CORE, 'analytics:read', 'sensors:write', 'users:read', 'users:write']),
+  ADMIN: new Set<Permission>([...READ_CORE, 'forecast:write', 'analytics:read', 'sensors:write', 'users:read', 'users:write']),
   // Analista não vê Usuários e Acessos (gestão de usuários é exclusiva do ADMIN)
-  ANALISTA_DADOS: new Set<Permission>([...READ_CORE, 'analytics:read']),
+  ANALISTA_DADOS: new Set<Permission>([...READ_CORE, 'forecast:write', 'analytics:read']),
   PRODUTOR_EXPORTADOR: new Set<Permission>(READ_CORE),
 };
 
