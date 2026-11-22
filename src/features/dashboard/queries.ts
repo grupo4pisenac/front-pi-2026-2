@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AggregateBucket, ClimateRange, CropId } from '@/types';
 import { dashboardService } from '@/services/dashboardService';
 
@@ -30,6 +30,19 @@ export const useHarvestForecast = (cropId: CropId) =>
     queryFn: () => dashboardService.getHarvestForecast(cropId),
     placeholderData: (prev) => prev,
   });
+
+/** Salva a produção mensal e recarrega todas as previsões (cartão da cultura e comparativo entre culturas). */
+export function useUpdateHarvestForecast() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ cropId, monthlyProductionT }: { cropId: CropId; monthlyProductionT: number[] }) =>
+      dashboardService.updateHarvestForecast(cropId, monthlyProductionT),
+    onSuccess: (data) => {
+      qc.setQueryData(dashboardKeys.forecast(data.cropId), data);
+      return qc.invalidateQueries({ queryKey: ['dashboard', 'forecast'] });
+    },
+  });
+}
 
 export const useActivePlots = () =>
   useQuery({ queryKey: dashboardKeys.plots, queryFn: () => dashboardService.getActivePlots() });
