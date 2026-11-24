@@ -1,17 +1,41 @@
-import { Sprout } from 'lucide-react';
+import logoLight from '@/assets/logo-light.png';
+import logoDark from '@/assets/logo-dark.png';
+import { cn } from '@/lib/cn';
 
-export function Logo() {
+interface LogoProps {
+  /** 'auto' alterna entre roxa (light) e branca (dark); 'light' ou 'dark' força a variante. */
+  variant?: 'auto' | 'light' | 'dark';
+  subtitle?: boolean;
+  className?: string;
+}
+
+export function Logo({ variant = 'auto', subtitle = true, className }: LogoProps) {
   return (
-    <div className="flex items-center gap-3">
-      <span aria-hidden className="inline-flex h-10 w-10 items-center justify-center rounded-tile bg-brand text-white">
-        <Sprout className="h-5 w-5" strokeWidth={2} />
-      </span>
-      <div className="leading-tight">
-        <p className="text-[17px] font-bold tracking-tight text-ink">
-          bartô<span className="text-brand">.io</span>
+    <div className={cn('flex flex-col items-start', className)}>
+      {variant !== 'dark' && (
+        <img
+          src={logoLight}
+          alt="bartô.io"
+          className={cn('h-8 w-auto select-none object-contain', variant === 'auto' && 'dark:hidden')}
+        />
+      )}
+      {variant !== 'light' && (
+        <img
+          src={logoDark}
+          alt="bartô.io"
+          className={cn('h-8 w-auto select-none object-contain', variant === 'auto' && 'hidden dark:block')}
+        />
+      )}
+      {subtitle && (
+        <p
+          className={cn(
+            'mt-1 text-[11px] font-medium',
+            variant === 'dark' ? 'text-emerald-200/80' : 'text-ink-subtle',
+          )}
+        >
+          Clima &amp; safra · Vale do São Francisco
         </p>
-        <p className="text-[11px] font-medium text-ink-subtle">Clima &amp; safra · Vale do São Francisco</p>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { RadioTower, Sprout } from 'lucide-react';
+import { RadioTower } from 'lucide-react';
 import { ThemeToggle } from '@/app/theme';
 import { Logo } from '@/components/layout/Logo';
 import { Card } from '@/components/ui';
@@ -26,14 +26,8 @@ export function AuthLayout({ children }: { children: ReactNode }) {
           />
           <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-[#081A10] via-[#0D2618]/85 to-[#123522]/70" />
 
-          <div className="relative z-10 flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-tile bg-emerald-500 text-slate-950">
-              <Sprout className="h-5 w-5" strokeWidth={2.2} />
-            </span>
-            <div>
-              <p className="text-lg font-bold tracking-tight">bartô.io</p>
-              <p className="text-xs text-emerald-200/80">Vale do São Francisco · PE/BA</p>
-            </div>
+          <div className="relative z-10">
+            <Logo variant="dark" />
           </div>
 
           <div className="relative z-10 space-y-4">
